@@ -1,0 +1,433 @@
+﻿<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dia.Studio — студія манікюру</title>
+<meta name="description" content="Dia.Studio — студія манікюру: гель-покриття, cat-eye, нейл-арт. Запис у WhatsApp, Telegram та Instagram.">
+<meta property="og:title" content="Dia.Studio — студія манікюру">
+<meta property="og:description" content="Нігті, що надихають. Запишіться на манікюр у Dia.Studio.">
+<meta property="og:image" content="img/hero.webp">
+<meta name="theme-color" content="#fbf3f1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23fbf3f1'/%3E%3Cpath d='M22 12h20l10 12-20 30L12 24z' fill='%23d98a8f'/%3E%3Cpath d='M22 12h20l10 12H12z' fill='%23f0b9ae'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ecd9d3; --pink:#e0bfb9; --pink2:#d6aaa8; --soft:#f3e5e0; --deep:#dcbcb5; --rose:#cf7f86; --rose-deep:#9c3f55; --ink:#241a1e; --muted:#43323a; --line:rgba(36,26,30,.12); --white:#fff;
+  --display:'Playfair Display',Georgia,serif; --hand:'Caveat',cursive; --sans:'Manrope',system-ui,sans-serif;
+  --spring:cubic-bezier(.175,.885,.32,1.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;line-height:1.7;overflow-x:clip;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:url("img/bg.webp") center/cover;pointer-events:none}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1180px,100% - 40px);margin-inline:auto}
+h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.1;letter-spacing:-.01em}
+h2{font-size:clamp(2.2rem,4.6vw,3.4rem)}
+.hand{font-family:var(--hand);font-weight:600;color:var(--rose-deep);line-height:1}
+:focus-visible{outline:2px solid var(--rose-deep);outline-offset:4px}
+
+/* ===== Liquid glass (кнопки) ===== */
+.glass{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.65rem;padding:1.05rem 2.2rem;border-radius:26px;font:600 1rem/1 var(--sans);color:#2b1216;cursor:pointer;border:0;isolation:isolate;overflow:hidden;
+  background:linear-gradient(135deg,rgba(238,170,172,.92),rgba(205,127,138,.9));
+  box-shadow:0 6px 6px rgba(70,20,30,.16),0 0 20px rgba(205,127,138,.25);
+  transition:transform .7s var(--spring),border-radius .7s var(--spring),box-shadow .5s ease;transform:translateZ(0)}
+.glass::before{content:"";position:absolute;inset:0;z-index:-2;backdrop-filter:blur(3px) saturate(1.4);-webkit-backdrop-filter:blur(3px) saturate(1.4)}
+.glass::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,.55) 0,rgba(255,255,255,.12) 38%,rgba(255,255,255,0) 60%);background-size:220% 100%;background-position:0 0;
+  box-shadow:inset 2px 2px 1px 0 rgba(255,255,255,.75),inset -1px -1px 1px 1px rgba(255,255,255,.55);transition:background-position .9s ease,border-radius .7s var(--spring)}
+.glass>span,.glass>svg{position:relative;transition:transform .7s var(--spring)}
+.glass svg{width:18px;height:18px;flex:none}
+.glass:hover{transform:scale(1.07);border-radius:34px;box-shadow:0 10px 18px rgba(70,20,30,.22),0 0 30px rgba(255,255,255,.7),0 0 18px rgba(207,127,134,.55)}
+.glass:hover::after{background-position:100% 0}
+.glass:hover>span{transform:scale(.96)}
+.glass:active{transform:scale(.98)}
+.glass.sm{padding:.75rem 1.5rem;font-size:.92rem;border-radius:20px}
+.glass.ink{color:#fff;background:linear-gradient(135deg,rgba(60,38,46,.92),rgba(36,26,30,.94));box-shadow:0 6px 6px rgba(0,0,0,.22),0 0 20px rgba(36,26,30,.2)}
+.glass.ink:hover{box-shadow:0 10px 18px rgba(0,0,0,.28),0 0 28px rgba(255,255,255,.5),0 0 16px rgba(207,127,134,.6)}
+.glass.ink::after{box-shadow:inset 2px 2px 1px 0 rgba(255,255,255,.35),inset -1px -1px 1px 1px rgba(255,255,255,.25)}
+
+/* header: меню | логотип по центру | кнопка */
+header{position:fixed;inset:0 0 auto 0;z-index:50;transition:background .3s,box-shadow .3s}
+header.solid{background:rgba(236,217,211,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--line)}
+.wrap.nav{width:calc(100% - 56px);max-width:none}
+.nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:84px}
+.menu{display:flex;gap:2rem;font-size:.95rem;font-weight:500}
+
+.menu a{padding:.3rem 0;border-bottom:1px solid transparent;transition:.2s}
+.menu a:hover{color:var(--rose-deep);border-color:var(--rose-deep)}
+.logo{display:flex;align-items:center;gap:.7rem;color:var(--ink)}
+.logo svg{width:38px;height:38px;filter:drop-shadow(0 4px 8px rgba(180,96,109,.35));transition:transform .6s var(--spring)}
+.logo:hover svg{transform:rotate(-8deg) scale(1.12)}
+.logo b{font-family:var(--display);font-weight:700;font-size:1.7rem;letter-spacing:-.01em}
+.nav-r{justify-self:end}
+.burger{display:none;background:none;border:0;color:var(--ink);width:44px;height:44px;cursor:pointer;justify-self:start}
+.burger svg{width:26px;height:26px}
+.mobile-menu{display:none}
+
+/* hero */
+.hero{position:relative;min-height:100svh;display:flex;align-items:center;overflow:hidden;isolation:isolate}
+.hero-img{position:absolute;top:0;bottom:0;right:0;width:64%;z-index:-2}
+.hero-img img{width:100%;height:100%;object-fit:cover;object-position:60% 55%}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(236,217,211,.78) 0,rgba(236,217,211,.78) 30%,rgba(236,217,211,.55) 46%,rgba(224,191,185,0) 68%),linear-gradient(0deg,rgba(236,217,211,.6) 0,transparent 18%)}
+.hero-inner{padding:150px 0 100px;max-width:580px}
+.hero h1{font-size:clamp(3rem,6.6vw,5.4rem)}
+.hero .lead{font-size:1.15rem;color:var(--muted);max-width:32ch;margin:1.4rem 0 2rem}
+.note{position:absolute;font-family:var(--hand);font-weight:600;color:var(--rose-deep);text-align:center;line-height:1}
+.hero .note{right:6%;top:132px;font-size:clamp(1.8rem,3.2vw,2.8rem);transform:rotate(8deg);max-width:6ch;color:#fff;text-shadow:0 2px 14px rgba(70,20,30,.5)}
+.perks{display:flex;gap:2rem;margin-top:3rem;flex-wrap:wrap}
+.perk{display:flex;flex-direction:column;align-items:flex-start;gap:.2rem;font-weight:600;font-size:.92rem;line-height:1.3;max-width:150px}
+.perk svg{width:30px;height:30px;color:var(--rose-deep);margin-bottom:.35rem}
+.perk small{font-weight:400;color:var(--muted);font-size:.8rem}
+
+section{position:relative}
+/* about */
+.about{padding:120px 0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}
+.about h2{margin-bottom:1.3rem}
+.about p{color:var(--muted);max-width:44ch;font-size:1.05rem}
+.about .hand{display:block;font-size:2.1rem;margin-top:1.4rem;transform:rotate(-3deg)}
+.frame{position:relative;border-radius:28px;overflow:hidden;aspect-ratio:4/5;box-shadow:0 30px 60px -34px rgba(120,50,62,.55)}
+.frame img{width:100%;height:100%;object-fit:cover}
+.facts{display:flex;gap:2.4rem;margin-top:2rem;flex-wrap:wrap}
+.facts div{font-size:.92rem;color:var(--muted);max-width:15ch;line-height:1.35}
+.facts b{display:block;font-family:var(--display);font-weight:600;font-size:1.7rem;color:var(--rose-deep);margin-bottom:.15rem}
+
+/* services */
+.services{padding:110px 0;background:linear-gradient(180deg,rgba(214,170,168,.5),rgba(224,191,185,.4))}
+.sv-head{display:flex;justify-content:space-between;align-items:end;gap:2rem;margin-bottom:2.6rem;flex-wrap:wrap}
+.sv-head p{color:var(--muted);max-width:34ch}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.card{background:var(--soft);border-radius:24px;overflow:hidden;box-shadow:0 18px 40px -26px rgba(120,50,62,.5);transition:transform .5s var(--spring)}
+.card:hover{transform:translateY(-8px)}
+.card .ph{aspect-ratio:4/4.3;overflow:hidden}
+.card img{width:100%;height:100%;object-fit:cover;transition:transform .8s}
+.card:hover img{transform:scale(1.06)}
+.card div.t{padding:1.2rem 1.3rem 1.4rem}
+.card h3{font-size:1.4rem}
+.card p{font-size:.88rem;color:var(--muted);margin-top:.35rem;line-height:1.5}
+
+/* gel */
+.gel{padding:30px 0 110px}
+.gel .split{grid-template-columns:.8fr 1.2fr}
+.gel .frame{aspect-ratio:3/4;max-width:400px;margin-inline:auto}
+.gel h2{margin-bottom:1.2rem}
+.gel p{color:var(--muted);max-width:44ch;margin-bottom:1.8rem;font-size:1.05rem}
+.gel .hand{display:block;font-size:2rem;margin-bottom:1.6rem;transform:rotate(-2deg);transform-origin:left}
+/* master */
+.master{padding:120px 0}
+.master .split{grid-template-columns:.85fr 1.15fr}
+.master h2{margin-bottom:1.2rem}
+.master h2 .hand{display:block;font-size:1.25em;margin-top:.2rem;transform:rotate(-2deg);transform-origin:left}
+.master p{color:var(--muted);max-width:46ch;margin-bottom:1rem;font-size:1.05rem}
+.master .frame{aspect-ratio:3/4;max-width:420px}
+.list{list-style:none;margin:1.4rem 0 2.2rem;display:grid;gap:.75rem}
+.list li{display:flex;gap:.8rem;align-items:center;font-weight:500}
+.list svg{width:20px;height:20px;color:var(--rose-deep);flex:none}
+
+/* gallery: карточки накладываются */
+.gallery{padding:110px 0 60px}
+.gallery .head{text-align:center;margin-bottom:3rem}
+.gallery .head p{color:var(--muted);margin-top:.8rem}
+.stack{width:min(900px,100% - 32px);margin-inline:auto;padding-bottom:6vh}
+.work{position:sticky;display:block;width:100%;height:min(74vh,640px);margin:0 0 34vh;border:0;padding:0;border-radius:32px;overflow:hidden;cursor:zoom-in;background:#2a1a20;box-shadow:0 30px 60px -28px rgba(90,30,45,.65),0 0 0 6px var(--soft);transform-origin:50% 0;will-change:transform}
+.work:last-child{margin-bottom:0}
+.work img{width:100%;height:100%;object-fit:cover}
+.work::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(50,18,30,.7) 0,transparent 38%);pointer-events:none}
+.work figcaption{position:absolute;left:28px;right:28px;bottom:24px;z-index:2;text-align:left;color:#fff;display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap}
+.work figcaption b{font-family:var(--display);font-weight:600;font-size:clamp(1.5rem,3.4vw,2.3rem);line-height:1.1}
+.work figcaption span{font-family:var(--hand);font-weight:600;font-size:1.6rem;color:#ffd2cf}
+
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(40,16,26,.93);display:none;align-items:center;justify-content:center;padding:20px}
+.lightbox.open{display:flex}
+.lightbox img{max-height:90vh;max-width:min(92vw,900px);border-radius:16px;object-fit:contain}
+.lb-btn{position:absolute;background:rgba(255,255,255,.14);border:0;color:#fff;width:48px;height:48px;border-radius:50%;cursor:pointer;font-size:1.4rem;display:grid;place-items:center;transition:background .2s}
+.lb-btn:hover{background:rgba(255,255,255,.3)}
+.lb-close{top:18px;right:18px}.lb-prev{left:16px;top:50%}.lb-next{right:16px;top:50%}
+
+/* cta: стеклянный док з месенджерами на рухомому фоні */
+.cta{position:relative;padding:130px 0;text-align:center;overflow:hidden;isolation:isolate;color:#fff;background:linear-gradient(160deg,#cf7f86,#e8a3a3)}
+.cta-bg{position:absolute;inset:-6%;z-index:-2;background:url("img/bow.webp") center/cover;animation:drift 40s ease-in-out infinite alternate;opacity:.4}
+.cta::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(201,108,122,.55),rgba(240,170,170,.3))}
+@keyframes drift{from{transform:scale(1.05) translate(0,0)}to{transform:scale(1.18) translate(-3%,-4%)}}
+.cta h2{margin-bottom:1rem;text-shadow:0 2px 20px rgba(80,20,35,.45)}
+.cta p{margin:0 auto 2.4rem;max-width:42ch;font-size:1.1rem;text-shadow:0 1px 12px rgba(80,20,35,.5)}
+.dock{display:inline-flex;gap:14px;padding:14px;border-radius:34px;position:relative;isolation:isolate;overflow:hidden;
+  box-shadow:0 6px 6px rgba(60,10,25,.25),0 0 24px rgba(255,255,255,.25);transition:padding .7s var(--spring),border-radius .7s var(--spring)}
+.dock::before{content:"";position:absolute;inset:0;z-index:-2;backdrop-filter:blur(8px) saturate(1.5);-webkit-backdrop-filter:blur(8px) saturate(1.5);background:rgba(255,255,255,.22)}
+.dock::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;box-shadow:inset 2px 2px 1px 0 rgba(255,255,255,.6),inset -1px -1px 1px 1px rgba(255,255,255,.5)}
+.dock:hover{padding:18px;border-radius:40px}
+.dock a{display:flex;flex-direction:column;align-items:center;gap:.5rem;font-size:.82rem;font-weight:600;color:#fff;text-shadow:0 1px 8px rgba(60,10,25,.55)}
+.dock .ic{width:76px;height:76px;border-radius:24px;display:grid;place-items:center;box-shadow:0 8px 16px -6px rgba(40,5,20,.55),inset 0 1px 1px rgba(255,255,255,.5);transition:transform .7s var(--spring)}
+.dock a:hover .ic{transform:scale(1.14) translateY(-4px)}
+.dock .ic svg{width:38px;height:38px;color:#fff}
+.ic.wa{background:linear-gradient(160deg,#4be58a,#1e9e53)}
+.ic.tg{background:linear-gradient(160deg,#5cc3f5,#2a86c4)}
+.ic.ig{background:linear-gradient(135deg,#f6a24f,#d6407a 55%,#8a4fd0)}
+.cta .hand{display:block;color:#fff;font-size:2rem;margin-top:2rem;transform:rotate(-2deg);text-shadow:0 2px 14px rgba(80,20,35,.5)}
+footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
+.foot{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center}
+.foot .logo b{font-size:1.2rem}.foot .logo svg{width:26px;height:26px}
+
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.hero-inner>*{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+.hero-inner>*:nth-child(2){animation-delay:.12s}.hero-inner>*:nth-child(3){animation-delay:.24s}.hero-inner>*:nth-child(4){animation-delay:.36s}
+.hero-img img{animation:zoom 1.6s ease-out both}
+@keyframes zoom{from{transform:scale(1.08)}to{transform:none}}
+@media(prefers-reduced-motion:reduce){html:not(.motion-on) *{animation:none!important;scroll-behavior:auto!important}}
+
+@media(max-width:980px){
+  header{background:rgba(236,217,211,.95);box-shadow:0 1px 0 var(--line)}
+  .nav{height:72px}
+  .menu,.nav-r{display:none}
+  .burger{display:grid;place-items:center}
+  .nav::after{content:"";width:44px}
+  .logo b{font-size:1.45rem}.logo svg{width:32px;height:32px}
+  .mobile-menu{position:fixed;inset:72px 0 auto 0;z-index:49;background:rgba(236,217,211,.99);border-bottom:1px solid var(--line);padding:14px 20px 24px;flex-direction:column}
+  .mobile-menu.open{display:flex}
+  .mobile-menu a:not(.glass){padding:.9rem 0;font-size:1.05rem;font-weight:500;border-bottom:1px solid var(--line)}
+  .mobile-menu .glass{margin-top:16px}
+  .split,.master .split,.gel .split{grid-template-columns:1fr;gap:40px}
+  .gel{padding:10px 0 80px}
+  .master .frame{margin-inline:auto}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .hero{min-height:auto;align-items:flex-end}
+  .hero-img{inset:72px 0 auto 0;width:100%;height:min(480px,108vw)}
+  .hero-img img{object-position:72% 60%}
+  .hero::before{background:linear-gradient(180deg,transparent min(280px,58vw),rgba(236,217,211,.7) min(500px,112vw))}
+  .hero .note{top:92px;right:5%}
+  .hero-inner{padding:min(440px,98vw) 0 60px}
+  .hero .lead{max-width:none}
+}
+@media(max-width:560px){
+  .wrap{width:calc(100% - 32px)}
+  .about,.master,.services{padding:76px 0}.cta{padding:90px 0}.gallery{padding:76px 0 40px}
+  .cards{gap:12px}.card p{display:none}.card h3{font-size:1.1rem}.card div.t{padding:.9rem 1rem 1rem}
+  .hero .glass{width:100%}
+  .dock .ic{width:64px;height:64px;border-radius:20px}.dock .ic svg{width:32px;height:32px}.dock{gap:10px;padding:12px}
+  .work{height:min(66vh,520px);border-radius:26px;margin-bottom:30vh}
+  .work figcaption{left:18px;right:18px;bottom:16px}
+  .perks{gap:1.4rem}
+}
+</style>
+</head>
+<body>
+
+<header id="top">
+  <div class="wrap nav">
+    <button class="burger" id="burger" aria-label="Меню" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <nav class="menu" aria-label="Головне меню">
+      <a href="#about">Про нас</a><a href="#services">Послуги</a><a href="#master">Майстер</a><a href="#gallery">Роботи</a>
+    </nav>
+    <a href="#top" class="logo" aria-label="Dia.Studio — на початок">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="gA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe0d8"/><stop offset="1" stop-color="#e79e9a"/></linearGradient>
+          <linearGradient id="gB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e48f98"/><stop offset="1" stop-color="#a94c61"/></linearGradient>
+          <linearGradient id="gC" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cf6f82"/><stop offset="1" stop-color="#8e3a52"/></linearGradient>
+        </defs>
+        <polygon points="22,9 42,9 54,23 10,23" fill="url(#gA)"/>
+        <polygon points="10,23 32,23 32,57" fill="url(#gB)"/>
+        <polygon points="54,23 32,23 32,57" fill="url(#gC)"/>
+        <polygon points="22,9 32,23 10,23" fill="#fff" opacity=".35"/>
+        <polygon points="42,9 32,23 54,23" fill="#fff" opacity=".12"/>
+        <path d="M22 9l10 14 10-14M10 23l22 34 22-34" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.2" stroke-linejoin="round"/>
+      </svg>
+      <b>Dia.Studio</b>
+    </a>
+    <div class="nav-r"><a class="glass sm" href="#book"><span>Записатись</span></a></div>
+  </div>
+  <nav class="mobile-menu" id="mmenu" aria-label="Мобільне меню">
+    <a href="#about">Про нас</a><a href="#services">Послуги</a><a href="#master">Майстер</a><a href="#gallery">Роботи</a>
+    <a class="glass" href="#book"><span>Записатись</span></a>
+  </nav>
+</header>
+
+<main>
+<section class="hero">
+  <div class="hero-img"><img src="img/hero.webp" alt="Червоно-чорний манікюр cat-eye — робота Dia.Studio" fetchpriority="high"></div>
+  <span class="note" aria-hidden="true">Гарні нігті, щасливі ви ♡</span>
+  <div class="wrap">
+    <div class="hero-inner">
+      <h1>Нігті, що надихають щодня</h1>
+      <p class="lead">Манікюр, який хочеться розглядати: гель, cat-eye, нейл-арт.</p>
+      <a class="glass" href="#book"><span>Записатись на манікюр</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <div class="perks">
+        <div class="perk"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M24 7l14 5v11c0 9-6 15-14 18C16 38 10 32 10 23V12z"/><path d="M17 24l5 5 9-10" stroke-linecap="round"/></svg>Стерильність<small>безпека понад усе</small></div>
+        <div class="perk"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M13 18l6-8h10l6 8-11 20z"/><path d="M13 18h22M19 10l5 28M29 10l-5 28"/></svg>Якісні гель-лаки<small>стійкий блиск</small></div>
+        <div class="perk"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M24 40S8 30 8 18a8 8 0 0116-3 8 8 0 0116 3c0 12-16 22-16 22z"/></svg>Свій дизайн<small>під ваш настрій</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div class="wrap split">
+    <div>
+      <h2>Краса, турбота, впевненість</h2>
+      <p>У Dia.Studio кожна деталь має значення. Ми дбаємо про ваші нігті в спокійній атмосфері: працюємо з перевіреними гель-лаками, стерилізуємо інструменти й підбираємо форму та дизайн саме під вас.</p>
+      <span class="hand">Побалуйте себе ♡</span>
+      <div class="facts">
+        <div><b>cat-eye</b>наш фірмовий дизайн</div>
+        <div><b>3D-декор</b>бантики та прикраси</div>
+      </div>
+    </div>
+    <div class="frame"><img src="img/studio.webp" alt="Полиці з гель-лаками та золотий брилліант на стіні студії Dia.Studio" loading="lazy"></div>
+  </div>
+</section>
+
+<section class="gel" id="gel">
+  <div class="wrap split">
+    <div class="frame"><img src="img/gel.webp" alt="Капля рожевого гель-лаку на пензлику над баночкою" loading="lazy"></div>
+    <div>
+      <h2>Гель, що лягає ідеально</h2>
+      <span class="hand">гладко, глибоко, блискуче</span>
+      <p>Рівне покриття без калюж і смуг, насичений колір і дзеркальний блиск. Ми не поспішаємо й наносимо кожен шар акуратно — щоб манікюр виглядав так само гарно через кілька тижнів.</p>
+      <a class="glass ink" href="#book"><span>Обрати свій колір</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="services" id="services">
+  <div class="wrap">
+    <div class="sv-head">
+      <h2>Послуги</h2>
+      <p>Оберіть готовий дизайн із фото або розкажіть свою ідею — ми зробимо.</p>
+    </div>
+    <div class="cards">
+      <article class="card"><div class="ph"><img src="img/nude.webp" alt="Ніжний рожевий мигдалеподібний манікюр" loading="lazy"></div><div class="t"><h3>Манікюр</h3><p>Акуратна форма, догляд за шкіркою, делікатне покриття.</p></div></article>
+      <article class="card"><div class="ph"><img src="img/red.webp" alt="Яскраво-червоний гелевий манікюр" loading="lazy"></div><div class="t"><h3>Гель-покриття</h3><p>Глибокий колір і дзеркальний блиск на кілька тижнів.</p></div></article>
+      <article class="card"><div class="ph"><img src="img/bow.webp" alt="Перламутровий манікюр з 3D-бантиком" loading="lazy"></div><div class="t"><h3>Нейл-арт</h3><p>Бантики, леопард, перламутр та авторські малюнки.</p></div></article>
+      <article class="card"><div class="ph"><img src="img/blue1.webp" alt="Синій манікюр cat-eye з магнітним ефектом" loading="lazy"></div><div class="t"><h3>Cat-eye</h3><p>Переливи, що рухаються разом зі світлом.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="master" id="master">
+  <div class="wrap split">
+    <div class="frame"><img src="img/master.webp" alt="Майстер Dia.Studio у студії" loading="lazy"></div>
+    <div>
+      <h2>Майстер, який чує вас <span class="hand">і робить саме так</span></h2>
+      <p>Кожен манікюр починається з розмови: яка форма, який настрій, який колір вам до душі. Ми працюємо уважно й без поспіху, щоб результат тішив вас щодня.</p>
+      <ul class="list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Підбір форми та дизайну під вас</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Стерильні інструменти, якісні гель-лаки</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Cat-eye, нейл-арт, 3D-декор</li>
+      </ul>
+      <a class="glass ink" href="#book"><span>Записатись до майстра</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="gallery" id="gallery">
+  <div class="wrap head">
+    <h2>Наші роботи</h2>
+    <p>Гортайте — фото лягають одне на одне. Натисніть, щоб відкрити на весь екран.</p>
+  </div>
+  <div class="stack" id="stack">
+    <button class="work" data-i="0" style="top:96px"><img src="img/blue1.webp" alt="Синій cat-eye манікюр" loading="lazy"><figcaption><b>Синій cat-eye</b><span>магнітний ефект</span></figcaption></button>
+    <button class="work" data-i="1" style="top:108px"><img src="img/red.webp" alt="Червоний манікюр, мигдалеподібна форма" loading="lazy"><figcaption><b>Класичний червоний</b><span>мигдаль</span></figcaption></button>
+    <button class="work" data-i="2" style="top:120px"><img src="img/leo1.webp" alt="Леопардовий нейл-арт" loading="lazy"><figcaption><b>Леопард</b><span>нейл-арт</span></figcaption></button>
+    <button class="work" data-i="3" style="top:132px"><img src="img/bow.webp" alt="Перламутр з 3D-бантиком" loading="lazy"><figcaption><b>Перлинний бантик</b><span>3D-декор</span></figcaption></button>
+    <button class="work" data-i="4" style="top:144px"><img src="img/wine.webp" alt="Бордовий cat-eye" loading="lazy"><figcaption><b>Бордо cat-eye</b><span>бронзовий перелив</span></figcaption></button>
+    <button class="work" data-i="5" style="top:156px"><img src="img/brown.webp" alt="Шоколадний глянцевий манікюр" loading="lazy"><figcaption><b>Шоколад</b><span>глянець</span></figcaption></button>
+    <button class="work" data-i="6" style="top:168px"><img src="img/blue2.webp" alt="Глибокий синій cat-eye" loading="lazy"><figcaption><b>Глибокий синій</b><span>cat-eye</span></figcaption></button>
+    <button class="work" data-i="7" style="top:180px"><img src="img/nude.webp" alt="Ніжний рожевий манікюр" loading="lazy"><figcaption><b>Ніжний нюд</b><span>щоденний образ</span></figcaption></button>
+    <button class="work" data-i="8" style="top:192px"><img src="img/leo2.webp" alt="Леопардовий дизайн на квадратних нігтях" loading="lazy"><figcaption><b>Сріблястий леопард</b><span>квадрат</span></figcaption></button>
+  </div>
+</section>
+
+<section class="cta" id="book">
+  <div class="cta-bg" aria-hidden="true"></div>
+  <div class="wrap">
+    <h2>Запишіться сьогодні</h2>
+    <p>Напишіть нам у зручний месенджер — підберемо час і обговоримо дизайн.</p>
+    <div class="dock">
+      <a data-link="wa" href="#book" target="_blank" rel="noopener" aria-label="Написати у WhatsApp"><span class="ic wa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 20l1.3-4.2A8 8 0 1 1 8.4 18.8z"/><path d="M9 9c0 3 3 6 6 6l1.2-1.4-2-1-1 .6c-.8-.4-1.6-1.2-2-2l.6-1-1-2z" fill="currentColor" stroke="none"/></svg></span>WhatsApp</a>
+      <a data-link="tg" href="#book" target="_blank" rel="noopener" aria-label="Написати у Telegram"><span class="ic tg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M21 4L3 11l6 2 2 6 3-4 5 4z"/><path d="M9 13l12-9"/></svg></span>Telegram</a>
+      <a data-link="ig" href="#book" target="_blank" rel="noopener" aria-label="Відкрити Instagram"><span class="ic ig"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></span>Instagram</a>
+    </div>
+    <span class="hand">Малі деталі — велике щастя</span>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span class="logo"><svg viewBox="0 0 64 64" aria-hidden="true"><polygon points="22,9 42,9 54,23 10,23" fill="#f0b9ae"/><polygon points="10,23 32,23 32,57" fill="#d98a8f"/><polygon points="54,23 32,23 32,57" fill="#b4606d"/></svg><b>Dia.Studio</b></span>
+    <span>© <span id="yr">2026</span> Dia.Studio · Студія манікюру</span>
+  </div>
+</footer>
+
+<div class="lightbox" id="lb" role="dialog" aria-modal="true" aria-label="Перегляд роботи">
+  <button class="lb-btn lb-close" id="lbClose" aria-label="Закрити">✕</button>
+  <button class="lb-btn lb-prev" id="lbPrev" aria-label="Попередня">‹</button>
+  <img id="lbImg" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="1" height="1">
+  <button class="lb-btn lb-next" id="lbNext" aria-label="Наступна">›</button>
+</div>
+
+<script>
+// ===== ВАШІ КОНТАКТИ — замініть тут, і всі кнопки на сайті оновляться =====
+const CONTACTS = {
+  wa: '',   // приклад: 'https://wa.me/49123456789'  (номер без плюса й пробілів)
+  tg: '',   // приклад: 'https://t.me/ваш_нік'
+  ig: ''    // приклад: 'https://www.instagram.com/ваш_нік/'
+};
+// =========================================================================
+// Поки контакт не заповнено, кнопка просто веде до блоку запису (нікуди не відкриває).
+document.querySelectorAll('[data-link]').forEach(a => {
+  const url = CONTACTS[a.dataset.link];
+  if (url) { a.href = url; a.target = '_blank'; a.rel = 'noopener'; }
+  else { a.href = '#book'; a.removeAttribute('target'); }
+});
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+const header = document.querySelector('header');
+const onScroll = () => header.classList.toggle('solid', scrollY > 30);
+addEventListener('scroll', onScroll, {passive:true}); onScroll();
+const burger = document.getElementById('burger'), mm = document.getElementById('mmenu');
+burger.addEventListener('click', () => { const o = mm.classList.toggle('open'); burger.setAttribute('aria-expanded', o); });
+mm.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { mm.classList.remove('open'); burger.setAttribute('aria-expanded', false); }));
+
+const works = [...document.querySelectorAll('.work')];
+const motionOk = !matchMedia('(prefers-reduced-motion: reduce)').matches || location.search.includes('motion=on');
+if (location.search.includes('motion=on')) document.documentElement.classList.add('motion-on');
+function stackFx(){
+  if (!motionOk) return;
+  works.forEach((w,i) => {
+    const next = works[i+1]; if (!next) return;
+    const top = parseFloat(w.style.top), nr = next.getBoundingClientRect();
+    const p = Math.min(1, Math.max(0, (innerHeight - nr.top) / (innerHeight - top - 40)));
+    w.style.transform = `scale(${1 - .05*p}) rotate(${(i % 2 ? 1 : -1) * 2.2 * p}deg)`;
+  });
+}
+addEventListener('scroll', () => requestAnimationFrame(stackFx), {passive:true}); addEventListener('resize', stackFx); stackFx();
+
+const imgs = works.map(w => w.querySelector('img'));
+const lb = document.getElementById('lb'), lbImg = document.getElementById('lbImg'); let cur = 0;
+const show = i => { cur = (i + imgs.length) % imgs.length; lbImg.src = imgs[cur].src; lbImg.alt = imgs[cur].alt; };
+works.forEach(b => b.addEventListener('click', () => { show(+b.dataset.i); lb.classList.add('open'); document.body.style.overflow = 'hidden'; }));
+const close = () => { lb.classList.remove('open'); document.body.style.overflow = ''; };
+document.getElementById('lbClose').onclick = close;
+document.getElementById('lbPrev').onclick = () => show(cur - 1);
+document.getElementById('lbNext').onclick = () => show(cur + 1);
+lb.addEventListener('click', e => { if (e.target === lb) close(); });
+addEventListener('keydown', e => { if (!lb.classList.contains('open')) return; if (e.key === 'Escape') close(); if (e.key === 'ArrowLeft') show(cur - 1); if (e.key === 'ArrowRight') show(cur + 1); });
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
