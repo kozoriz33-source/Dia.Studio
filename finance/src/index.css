@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; }
+  html, body, #root { min-height: 100%; }
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  input, select, textarea { font-size: 16px; } /* без авто-зума в iOS */
+  button { -webkit-user-select: none; user-select: none; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid #2F5BFF; outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+}
+
+@layer components {
+  .num { @apply font-display font-semibold; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .card { @apply rounded-[22px] bg-card p-4 shadow-card; }
+  .field {
+    @apply w-full rounded-2xl border border-line bg-soft px-3.5 py-3 text-ink outline-none
+           placeholder:text-ink3 focus:border-accent focus:bg-white;
+  }
+  .btn {
+    @apply rounded-2xl bg-ink px-4 py-3.5 font-semibold text-white transition active:scale-[.97] disabled:opacity-30;
+  }
+  .btn-accent { @apply rounded-2xl bg-accent px-4 py-3.5 font-semibold text-white transition active:scale-[.97] disabled:opacity-30; }
+  .btn-soft { @apply rounded-2xl bg-soft px-4 py-3.5 font-semibold text-ink transition active:scale-[.97] disabled:opacity-40; }
+  .chip { @apply rounded-full border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink transition active:scale-95; }
+  .chip-on { @apply border-ink bg-ink text-white; }
+  .label { @apply text-[12px] font-semibold uppercase tracking-[.08em] text-ink3; }
+}
