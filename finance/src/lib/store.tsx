@@ -1,81 +1,53 @@
 import {
   createContext, useCallback, useContext, useEffect, useReducer, useRef, useState, type ReactNode,
 } from 'react'
-import type { AppData, Bill, Category, Debt, Expense, Income, Limit, PlanShares, Settings } from './types'
-import { addMonths, monthOf, setCurrency, uid } from './format'
-import { DEFAULT_CATEGORIES, LEGACY_CATEGORIES } from './categories'
-import { DEFAULT_PLAN } from './plan'
+import type { AppData, Bill, Category, Credit, Expense, Income, PlanShares, Settings } from './types'
+import { monthOf, setCurrency } from './format'
+import { DEFAULT_CATEGORIES } from './categories'
+import { DEFAULT_PLAN } from './calc'
 
-const KEY = 'finance-app:v1'
+/* Версия 4 начинается с чистого листа: старые ключи не читаются */
+const KEY = 'finance-app:v4'
+const OLD_KEYS = ['finance-app:v1']
+const DOC_PREFIX = 'v4-'
 
-const DEFAULT_SETTINGS: Settings = { currency: '€', plan: DEFAULT_PLAN, payday: null, salary: 0, balance: null }
+const DEFAULT_SETTINGS: Settings = { currency: '€', paydays: [], plan: DEFAULT_PLAN, balance: null }
 
-const emptyData = (): AppData => ({
-  version: 3, updatedAt: 0,
-  incomes: [], expenses: [], debts: [], bills: [], limits: [],
+export const emptyData = (): AppData => ({
+  version: 4, updatedAt: 0,
+  incomes: [], expenses: [], bills: [], credits: [],
   categories: DEFAULT_CATEGORIES,
   settings: DEFAULT_SETTINGS,
 })
 
 export const hasContent = (d: AppData) =>
-  d.incomes.length + d.expenses.length + d.debts.length + d.bills.length + d.limits.length > 0
+  d.incomes.length + d.expenses.length + d.bills.length + d.credits.length + d.settings.paydays.length > 0
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/** Приводит сохранённые данные любой версии к текущему формату, ничего не теряя */
-export function migrate(raw: any): AppData {
+/** Проверяет и дополняет данные версии 4 (из облака, браузера или резервной копии) */
+export function normalize(raw: any): AppData {
   const base = emptyData()
-  if (!raw || typeof raw !== 'object') return base
-  let d: any = raw
-
-  if (!d.version) {
-    // v1: категории — строки, платежи по долгам не были расходами
-    let expenses: Expense[] = Array.isArray(d.expenses) ? d.expenses : []
-    const limits: Limit[] = Array.isArray(d.limits) ? d.limits : []
-    const used = new Set<string>([...expenses.map((e) => e.category), ...limits.map((l) => l.category).filter((c): c is string => !!c)])
-    const oldNames: string[] = Array.isArray(d.categories) ? d.categories.filter((c: any) => typeof c === 'string') : []
-    const v1Defaults = ['Продукты', 'Транспорт', 'Жильё', 'Здоровье', 'Развлечения', 'Одежда', 'Связь', 'Прочее']
-    const categories: Category[] = [...DEFAULT_CATEGORIES]
-    for (const name of new Set([...oldNames, ...used])) {
-      if (categories.some((c) => c.name === name)) continue
-      if (v1Defaults.includes(name) && !used.has(name)) continue
-      categories.push(LEGACY_CATEGORIES[name] ?? { name, group: 'other', icon: '📦' })
-    }
-    const debts: Debt[] = (Array.isArray(d.debts) ? d.debts : []).map((x: any) => {
-      const category = categories.find((c) => c.group === 'credit' && c.name.toLowerCase() === String(x.name).trim().toLowerCase())?.name ?? 'Кредит'
-      return {
-        ...x, category,
-        payments: (x.payments ?? []).map((p: any) => {
-          const id = uid()
-          expenses = [...expenses, { id, amount: p.amount, category, date: p.date, note: x.name, debtId: x.id }]
-          return { ...p, expenseId: id }
-        }),
-      }
-    })
-    d = { version: 2, incomes: Array.isArray(d.incomes) ? d.incomes : [], expenses, debts, limits, categories, bills: [], settings: {} }
-  }
-
-  // v2 → v3: новые категории и настройки зарплаты/остатка
-  const categories: Category[] = Array.isArray(d.categories) ? [...d.categories] : [...DEFAULT_CATEGORIES]
+  if (!raw || typeof raw !== 'object' || raw.version !== 4) return base
+  const arr = (x: any) => (Array.isArray(x) ? x : [])
+  const categories: Category[] = arr(raw.categories).length ? [...raw.categories] : [...DEFAULT_CATEGORIES]
   for (const c of DEFAULT_CATEGORIES) if (!categories.some((x) => x.name === c.name)) categories.push(c)
-  for (const c of categories) if (c.name === 'Здоровье' && c.group === 'daily') c.group = 'sport'
-
   return {
-    ...base,
-    incomes: d.incomes ?? [], expenses: d.expenses ?? [], debts: d.debts ?? [], bills: d.bills ?? [], limits: d.limits ?? [],
+    version: 4,
+    updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : 0,
+    incomes: arr(raw.incomes), expenses: arr(raw.expenses), bills: arr(raw.bills), credits: arr(raw.credits),
     categories,
-    settings: { ...DEFAULT_SETTINGS, ...d.settings, plan: { ...DEFAULT_PLAN, ...d.settings?.plan } },
-    updatedAt: typeof d.updatedAt === 'number' ? d.updatedAt : 0,
-    version: 3,
+    settings: { ...DEFAULT_SETTINGS, ...raw.settings, paydays: arr(raw.settings?.paydays), plan: { ...DEFAULT_PLAN, ...raw.settings?.plan } },
   }
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 function loadLocal(): AppData {
   try {
+    for (const k of OLD_KEYS) localStorage.removeItem(k)
     const raw = localStorage.getItem(KEY)
-    if (raw) return migrate(JSON.parse(raw))
+    if (raw) return normalize(JSON.parse(raw))
   } catch {
-    /* повреждённые данные или недоступное хранилище */
+    /* хранилище недоступно */
   }
   return emptyData()
 }
@@ -95,99 +67,38 @@ export type Action =
   | { type: 'deleteExpense'; id: string }
   | { type: 'addCategory'; item: Category }
   | { type: 'deleteCategory'; name: string }
-  | { type: 'addDebt'; item: Debt }
-  | { type: 'updateDebt'; item: Debt }
-  | { type: 'deleteDebt'; id: string }
-  | { type: 'payDebt'; id: string; expenseId: string; date: string; ts: number }
-  | { type: 'addBill'; item: Bill }
-  | { type: 'updateBill'; item: Bill }
+  | { type: 'saveBill'; item: Bill }
   | { type: 'deleteBill'; id: string }
-  | { type: 'setLimit'; item: Limit }
-  | { type: 'deleteLimit'; id: string }
+  | { type: 'saveCredit'; item: Credit }
+  | { type: 'deleteCredit'; id: string }
   | { type: 'setSettings'; patch: Partial<Settings> }
   | { type: 'setPlan'; plan: PlanShares }
   | { type: 'replaceAll'; data: AppData }
 
-const mapDebt = (s: AppData, id: string | undefined, f: (d: Debt) => Debt) =>
-  s.debts.map((d) => (d.id === id ? f(d) : d))
+const upsert = <T extends { id: string }>(list: T[], item: T) =>
+  list.some((x) => x.id === item.id) ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item]
 
 function apply(s: AppData, a: Action): AppData {
   switch (a.type) {
     case 'addIncome': return { ...s, incomes: [a.item, ...s.incomes] }
     case 'updateIncome': return { ...s, incomes: s.incomes.map((i) => (i.id === a.item.id ? a.item : i)) }
     case 'deleteIncome': return { ...s, incomes: s.incomes.filter((i) => i.id !== a.id) }
-
     case 'addExpense': return { ...s, expenses: [a.item, ...s.expenses] }
-    case 'updateExpense': {
-      const old = s.expenses.find((e) => e.id === a.item.id)
-      if (!old) return s
-      const diff = a.item.amount - old.amount
-      return {
-        ...s,
-        expenses: s.expenses.map((e) => (e.id === a.item.id ? a.item : e)),
-        debts: mapDebt(s, old.debtId, (d) => ({
-          ...d,
-          remaining: Math.max(0, Math.min(d.total, d.remaining - diff)),
-          payments: d.payments.map((p) => (p.expenseId === old.id ? { ...p, amount: a.item.amount, date: a.item.date } : p)),
-        })),
-      }
-    }
-    case 'deleteExpense': {
-      const old = s.expenses.find((e) => e.id === a.id)
-      if (!old) return s
-      return {
-        ...s,
-        expenses: s.expenses.filter((e) => e.id !== a.id),
-        // удалили платёж по кредиту — возвращаем долг и дату платежа
-        debts: mapDebt(s, old.debtId, (d) => ({
-          ...d,
-          remaining: Math.min(d.total, d.remaining + old.amount),
-          nextPaymentDate: addMonths(d.nextPaymentDate, -1),
-          payments: d.payments.filter((p) => p.expenseId !== old.id),
-        })),
-      }
-    }
-
+    case 'updateExpense': return { ...s, expenses: s.expenses.map((e) => (e.id === a.item.id ? a.item : e)) }
+    case 'deleteExpense': return { ...s, expenses: s.expenses.filter((e) => e.id !== a.id) }
     case 'addCategory':
       return s.categories.some((c) => c.name === a.item.name) ? s : { ...s, categories: [...s.categories, a.item] }
     case 'deleteCategory': return { ...s, categories: s.categories.filter((c) => c.name !== a.name) }
-
-    case 'addDebt': return { ...s, debts: [...s.debts, a.item] }
-    case 'updateDebt': return { ...s, debts: s.debts.map((d) => (d.id === a.item.id ? a.item : d)) }
-    case 'deleteDebt': return { ...s, debts: s.debts.filter((d) => d.id !== a.id) }
-    case 'payDebt': {
-      const d = s.debts.find((x) => x.id === a.id)
-      if (!d || d.remaining <= 0) return s
-      const amount = Math.min(d.monthlyPayment, d.remaining)
-      return {
-        ...s,
-        expenses: [{ id: a.expenseId, amount, category: d.category, date: a.date, note: d.name, debtId: d.id, ts: a.ts }, ...s.expenses],
-        debts: mapDebt(s, d.id, (x) => ({
-          ...x,
-          remaining: x.remaining - amount,
-          nextPaymentDate: addMonths(x.nextPaymentDate, 1),
-          payments: [...x.payments, { date: a.date, amount, expenseId: a.expenseId }],
-        })),
-      }
-    }
-
-    case 'addBill': return { ...s, bills: [...s.bills, a.item] }
-    case 'updateBill': return { ...s, bills: s.bills.map((b) => (b.id === a.item.id ? a.item : b)) }
+    case 'saveBill': return { ...s, bills: upsert(s.bills, a.item) }
     case 'deleteBill': return { ...s, bills: s.bills.filter((b) => b.id !== a.id) }
-
-    case 'setLimit': {
-      const rest = s.limits.filter((l) => l.id !== a.item.id && l.category !== a.item.category)
-      return { ...s, limits: [...rest, a.item] }
-    }
-    case 'deleteLimit': return { ...s, limits: s.limits.filter((l) => l.id !== a.id) }
-
+    case 'saveCredit': return { ...s, credits: upsert(s.credits, a.item) }
+    case 'deleteCredit': return { ...s, credits: s.credits.filter((c) => c.id !== a.id) }
     case 'setSettings': return { ...s, settings: { ...s.settings, ...a.patch } }
     case 'setPlan': return { ...s, settings: { ...s.settings, plan: a.plan } }
     case 'replaceAll': return a.data
   }
 }
 
-/** Отметка времени ставится в dispatch, чтобы редьюсер оставался чистым */
 type Stamped = { action: Action; now: number }
 
 function reducer(s: AppData, { action, now }: Stamped): AppData {
@@ -196,52 +107,41 @@ function reducer(s: AppData, { action, now }: Stamped): AppData {
   return action.type === 'replaceAll' ? next : { ...next, updatedAt: now }
 }
 
-/* ---------- Облако: база артефакта (db) ---------- */
+/* ---------- Облако: личное хранилище пользователя в базе артефакта ---------- */
 
 /*
- * Раскладка в базе (личное пространство пользователя, видно только ему):
- *   data/users/<id>/state      — настройки, платежи, кредиты, категории, лимиты
- *   data/users/<id>/m-YYYY-MM  — доходы и расходы одного месяца
- * Так ни один документ не упирается в лимит 256 КБ.
+ *   data/users/<id>/v4-state        — платежи, кредиты, зарплаты, категории, настройки
+ *   data/users/<id>/v4-m-YYYY-MM    — доходы и расходы одного месяца
  */
 type Docs = Record<string, Record<string, unknown>>
 
 function toDocs(d: AppData): Docs {
   const docs: Docs = {
-    state: {
-      version: d.version, updatedAt: d.updatedAt, debts: d.debts, bills: d.bills,
-      limits: d.limits, categories: d.categories, settings: d.settings,
-    },
+    [`${DOC_PREFIX}state`]: { version: d.version, updatedAt: d.updatedAt, bills: d.bills, credits: d.credits, categories: d.categories, settings: d.settings },
   }
-  const month = (ym: string) => (docs[`m-${ym}`] ??= { incomes: [], expenses: [] }) as { incomes: Income[]; expenses: Expense[] }
+  const month = (ym: string) => (docs[`${DOC_PREFIX}m-${ym}`] ??= { incomes: [], expenses: [] }) as { incomes: Income[]; expenses: Expense[] }
   for (const i of d.incomes) month(monthOf(i.date)).incomes.push(i)
   for (const e of d.expenses) month(monthOf(e.date)).expenses.push(e)
   return docs
 }
 
 function fromDocs(snap: ClaudeQuerySnap): AppData | null {
-  const state = snap.docs.find((x) => x.id === 'state')?.data()
+  const state = snap.docs.find((x) => x.id === `${DOC_PREFIX}state`)?.data()
   if (!state) return null
   const incomes: Income[] = []
   const expenses: Expense[] = []
   for (const doc of snap.docs) {
-    if (!doc.id.startsWith('m-')) continue
+    if (!doc.id.startsWith(`${DOC_PREFIX}m-`)) continue
     const body = doc.data() as { incomes?: Income[]; expenses?: Expense[] } | undefined
     incomes.push(...(body?.incomes ?? []))
     expenses.push(...(body?.expenses ?? []))
   }
-  return migrate({ ...state, incomes, expenses })
+  return normalize({ ...state, incomes, expenses })
 }
 
 export type SyncStatus = 'connecting' | 'cloud' | 'saving' | 'local' | 'error'
 
-/* ---------- Провайдер ---------- */
-
-interface Store {
-  data: AppData
-  dispatch: (a: Action) => void
-  sync: SyncStatus
-}
+interface Store { data: AppData; dispatch: (a: Action) => void; sync: SyncStatus }
 
 const Ctx = createContext<Store | null>(null)
 
@@ -253,15 +153,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const dispatch = useCallback((action: Action) => rawDispatch({ action, now: Date.now() }), [])
 
   const coll = useRef<ClaudeCollectionRef | null>(null)
-  const written = useRef<Record<string, string>>({}) // последнее записанное содержимое документов
-  const ready = useRef(false) // первый снимок из облака получен
+  const written = useRef<Record<string, string>>({})
+  const ready = useRef(false)
   const latest = useRef(data)
   latest.current = data
 
-  // Локальная копия — всегда, мгновенно
   useEffect(() => { saveLocal(data) }, [data])
 
-  // Запись в облако: только изменившиеся документы, по одному, с паузой на серию правок
+  // Запись в облако: только изменившиеся документы, по одному, после паузы
   const writing = useRef(false)
   const again = useRef(false)
   const flush = useCallback(async () => {
@@ -272,11 +171,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       do {
         again.current = false
         const docs = toDocs(latest.current)
-        // известные документы, которые опустели, перезаписываем пустыми
-        for (const id of Object.keys(written.current)) if (!docs[id] && id.startsWith('m-')) docs[id] = { incomes: [], expenses: [] }
+        for (const id of Object.keys(written.current)) if (!docs[id] && id.startsWith(`${DOC_PREFIX}m-`)) docs[id] = { incomes: [], expenses: [] }
         const changed = Object.keys(docs)
           .filter((id) => written.current[id] !== JSON.stringify(docs[id]))
-          .sort((a) => (a === 'state' ? 1 : -1)) // state последним
+          .sort((a) => (a.endsWith('state') ? 1 : -1))
         if (changed.length) setSync('saving')
         for (const id of changed) {
           const json = JSON.stringify(docs[id])
@@ -298,7 +196,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t)
   }, [data, flush])
 
-  // Подключение к облаку
   useEffect(() => {
     let unsub: (() => void) | undefined
     let cancelled = false
@@ -313,11 +210,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       unsub = coll.current.onSnapshot(
         (snap) => {
           if (snap.metadata.hasPendingWrites) return
-          if (!ready.current && snap.metadata.fromCache && snap.empty) return // ждём ответа сервера
+          if (!ready.current && snap.metadata.fromCache && snap.empty) return
           const remote = fromDocs(snap)
           if (remote) {
             for (const [docId, body] of Object.entries(toDocs(remote))) written.current[docId] = JSON.stringify(body)
-            for (const d of snap.docs) if (d.id.startsWith('m-')) written.current[d.id] ??= JSON.stringify(d.data())
+            for (const d of snap.docs) if (d.id.startsWith(`${DOC_PREFIX}m-`)) written.current[d.id] ??= JSON.stringify(d.data())
           }
           const local = latest.current
           const first = !ready.current
@@ -326,7 +223,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             rawDispatch({ action: { type: 'replaceAll', data: remote }, now: Date.now() })
             setSync('cloud')
           } else if (!remote && hasContent(local)) {
-            // облако пустое — переносим туда то, что было в браузере
             void flush()
           } else if (first) {
             if (remote && local.updatedAt > remote.updatedAt) void flush()

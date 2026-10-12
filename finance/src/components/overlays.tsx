@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import type { AppData, Bill, Debt, Expense, Income, Limit } from '../lib/types'
-import { dueDate, fmtMoney, monthOf, parseAmount, shiftDays, todayISO, uid, addMonthsYM, dayLabel, CURRENCIES } from '../lib/format'
-import { GROUPS, GROUP_ORDER, MANDATORY_GROUPS, catInfo } from '../lib/categories'
-import { topCategories, type Operation } from '../lib/calc'
+import type { AppData, Bill, Credit, Payday } from '../lib/types'
+import { addMonthsYM, dayLabel, dueDate, fmtMoney, monthOf, parseAmount, shiftDays, todayISO, uid, CURRENCIES } from '../lib/format'
+import { BILL_GROUPS, GROUPS, GROUP_ORDER, catInfo } from '../lib/categories'
+import { creditLeft, creditNext, creditMonthsLeft, topCategories, type Operation } from '../lib/calc'
 import { useStore } from '../lib/store'
 import { CatIcon, DeleteButton, Field, Segmented, Sheet } from './ui'
 import { IconBackspace, IconBell } from './icons'
@@ -10,8 +10,8 @@ import { IconBackspace, IconBell } from './icons'
 export type Overlay =
   | { kind: 'quick'; mode?: 'expense' | 'income'; category?: string }
   | { kind: 'edit'; op: Operation }
-  | { kind: 'obligation'; type?: 'bill' | 'debt'; bill?: Bill; debt?: Debt; preset?: { name: string; category: string } }
-  | { kind: 'limit'; item?: Limit }
+  | { kind: 'bill'; item?: Bill; preset?: { name: string; category: string } }
+  | { kind: 'credit'; item?: Credit; preset?: { name: string; category: string } }
   | { kind: 'balance' }
   | { kind: 'salary' }
 
@@ -47,8 +47,8 @@ export function OverlayHost({ children }: { children: ReactNode }) {
       {children}
       {overlay?.kind === 'quick' && <QuickAdd spec={overlay} onClose={close} />}
       {overlay?.kind === 'edit' && <EditOperation op={overlay.op} onClose={close} />}
-      {overlay?.kind === 'obligation' && <ObligationSheet spec={overlay} onClose={close} />}
-      {overlay?.kind === 'limit' && <LimitSheet item={overlay.item} onClose={close} />}
+      {overlay?.kind === 'bill' && <BillSheet item={overlay.item} preset={overlay.preset} onClose={close} />}
+      {overlay?.kind === 'credit' && <CreditSheet item={overlay.item} preset={overlay.preset} onClose={close} />}
       {overlay?.kind === 'balance' && <BalanceSheet onClose={close} />}
       {overlay?.kind === 'salary' && <SalarySheet onClose={close} />}
       {toast && (
@@ -124,10 +124,10 @@ function QuickAdd({ spec, onClose }: { spec: Extract<Overlay, { kind: 'quick' }>
   const sources = useMemo(() => {
     const counts = new Map<string, number>()
     for (const i of data.incomes) counts.set(i.source, (counts.get(i.source) ?? 0) + 1)
-    const list = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s)
+    const list = [...data.settings.paydays.map((p) => p.name), ...[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s)]
     for (const s of ['Зарплата', 'Аванс', 'Подработка', 'Возврат долга']) if (!list.includes(s)) list.push(s)
-    return list.slice(0, 6)
-  }, [data.incomes])
+    return [...new Set(list)].slice(0, 6)
+  }, [data.incomes, data.settings.paydays])
 
   const save = (cat = category, src = source) => {
     if (!(n > 0)) return
@@ -292,7 +292,7 @@ function DateField({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
-/* ---------- Редактирование операции ---------- */
+/* ---------- Исправить запись ---------- */
 
 function EditOperation({ op, onClose }: { op: Operation; onClose: () => void }) {
   const { data, dispatch } = useStore()
@@ -310,16 +310,8 @@ function EditOperation({ op, onClose }: { op: Operation; onClose: () => void }) 
     e.preventDefault()
     if (!valid) return
     const before = data
-    if (isExp) {
-      const item: Expense = {
-        id: op.id, amount: n, category, date, note: note.trim(), ts: op.ts,
-        ...(op.debtId && { debtId: op.debtId }), ...(op.billId && { billId: op.billId }),
-      }
-      dispatch({ type: 'updateExpense', item })
-    } else {
-      const item: Income = { id: op.id, amount: n, source: source.trim(), date, note: note.trim(), ts: op.ts }
-      dispatch({ type: 'updateIncome', item })
-    }
+    if (isExp) dispatch({ type: 'updateExpense', item: { id: op.id, amount: n, category, date, note: note.trim(), ts: op.ts } })
+    else dispatch({ type: 'updateIncome', item: { id: op.id, amount: n, source: source.trim(), date, note: note.trim(), ts: op.ts } })
     toast('Сохранено', before)
     onClose()
   }
@@ -327,25 +319,16 @@ function EditOperation({ op, onClose }: { op: Operation; onClose: () => void }) 
   return (
     <Sheet title={isExp ? 'Расход' : 'Доход'} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4 pb-1">
-        <Field label="Дата">
-          <DateField value={date} onChange={setDate} />
-        </Field>
+        <Field label="Дата"><DateField value={date} onChange={setDate} /></Field>
         <Field label="Сумма">
           <input className="field num !text-2xl" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ''))} />
         </Field>
-        {isExp ? (
-          <Field label="Категория"><CategoryPicker value={category} onChange={setCategory} /></Field>
-        ) : (
-          <Field label="Источник"><input className="field" value={source} onChange={(e) => setSource(e.target.value)} /></Field>
-        )}
+        {isExp
+          ? <Field label="Категория"><CategoryPicker value={category} onChange={setCategory} /></Field>
+          : <Field label="Откуда"><input className="field" value={source} onChange={(e) => setSource(e.target.value)} /></Field>}
         <Field label="Заметка">
           <input className="field" placeholder="Необязательно" value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
-        {isExp && (op.debtId || op.billId) && (
-          <p className="rounded-2xl bg-soft p-3 text-[13px] text-ink2">
-            {op.debtId ? 'Платёж по кредиту: если удалить его, остаток кредита вернётся.' : 'Отметка обязательного платежа: если удалить её, платёж снова станет неоплаченным.'}
-          </p>
-        )}
         <button className="btn w-full" type="submit" disabled={!valid}>Сохранить</button>
         <DeleteButton onDelete={() => {
           const before = data
@@ -358,9 +341,39 @@ function EditOperation({ op, onClose }: { op: Operation; onClose: () => void }) 
   )
 }
 
-/* ---------- Обязательный платёж / кредит ---------- */
+/* ---------- Общие поля платежей ---------- */
 
-/** Ссылка на создание ежемесячного напоминания в Google Календаре */
+function DayStepper({ value, onChange }: { value: number; onChange: (d: number) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      <button type="button" className="btn-soft !px-4 !py-3" onClick={() => onChange(Math.max(1, value - 1))}>−</button>
+      <span className="num flex-1 text-center text-xl">{value}</span>
+      <button type="button" className="btn-soft !px-4 !py-3" onClick={() => onChange(Math.min(31, value + 1))}>+</button>
+    </div>
+  )
+}
+
+/** С какой зарплаты платить (показываем, когда зарплат больше одной) */
+function FundingPicker({ value, onChange }: { value?: number; onChange: (d?: number) => void }) {
+  const { data } = useStore()
+  const days = [...data.settings.paydays].sort((a, b) => a.day - b.day)
+  if (days.length < 2) return null
+  return (
+    <Field label="С какой зарплаты платить">
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" onClick={() => onChange(undefined)} className={`chip ${value === undefined ? 'chip-on' : ''}`}>Сам решит</button>
+        {days.map((p) => (
+          <button key={p.id} type="button" onClick={() => onChange(p.day)} className={`chip ${value === p.day ? 'chip-on' : ''}`}>
+            {p.name} {p.day}-го
+          </button>
+        ))}
+      </div>
+      <p className="mt-1.5 text-[12px] text-ink3">«Сам решит» — с последней зарплаты, которая приходит до платежа.</p>
+    </Field>
+  )
+}
+
+/** Ссылка на ежемесячное напоминание в Google Календаре */
 function calendarLink(title: string, firstDate: string, count?: number) {
   const d = firstDate.replace(/-/g, '')
   const p = new URLSearchParams({
@@ -373,107 +386,62 @@ function calendarLink(title: string, firstDate: string, count?: number) {
   return `https://calendar.google.com/calendar/render?${p}`
 }
 
-function ObligationSheet({ spec, onClose }: { spec: Extract<Overlay, { kind: 'obligation' }>; onClose: () => void }) {
+const nextDue = (day: number) => {
+  const t = todayISO()
+  const d = dueDate(monthOf(t), day)
+  return d >= t ? d : dueDate(addMonthsYM(monthOf(t), 1), day)
+}
+
+const Reminder = ({ href }: { href: string }) => (
+  <a href={href} target="_blank" rel="noreferrer" className="btn-soft flex w-full items-center justify-center gap-2">
+    <IconBell /> Напоминание в Google Календаре
+  </a>
+)
+
+/* ---------- Обязательный платёж ---------- */
+
+function BillSheet({ item, preset, onClose }: { item?: Bill; preset?: { name: string; category: string }; onClose: () => void }) {
   const { data, dispatch } = useStore()
   const { toast } = useUI()
-  const editing = spec.bill ?? spec.debt
-  const [type, setType] = useState<'bill' | 'debt'>(spec.debt ? 'debt' : spec.bill ? 'bill' : spec.type ?? 'bill')
-  const [name, setName] = useState(spec.bill?.name ?? spec.debt?.name ?? spec.preset?.name ?? '')
-  const [category, setCategory] = useState(spec.bill?.category ?? spec.debt?.category ?? spec.preset?.category ?? (type === 'debt' ? 'Кредит' : 'Другая подписка'))
-  const [amount, setAmount] = useState(numStr(spec.bill?.amount ?? spec.debt?.monthlyPayment))
-  const [day, setDay] = useState(spec.bill?.day ?? Number((spec.debt?.nextPaymentDate ?? todayISO()).slice(8)))
-  const [next, setNext] = useState(spec.debt?.nextPaymentDate ?? '')
-  const [total, setTotal] = useState(numStr(spec.debt?.total))
-  const [remaining, setRemaining] = useState(numStr(spec.debt?.remaining))
-
-  const t = todayISO()
-  const m = parseAmount(amount)
-  const tot = parseAmount(total)
-  const rem = remaining.trim() ? parseAmount(remaining) : tot
-  const valid = !!name.trim() && m > 0 && day >= 1 && day <= 31 && (type === 'bill' || (tot > 0 && rem >= 0))
-
-  // ближайшая дата платежа для выбранного числа
-  const upcomingDate = () => {
-    const d = dueDate(monthOf(t), day)
-    return d >= t ? d : dueDate(addMonthsYM(monthOf(t), 1), day)
-  }
+  const [name, setName] = useState(item?.name ?? preset?.name ?? '')
+  const [category, setCategory] = useState(item?.category ?? preset?.category ?? 'Другая подписка')
+  const [amount, setAmount] = useState(numStr(item?.amount))
+  const [day, setDay] = useState(item?.day ?? 1)
+  const [fromDay, setFromDay] = useState(item?.fromDay)
+  const n = parseAmount(amount)
+  const valid = !!name.trim() && n > 0
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!valid) return
     const before = data
-    if (type === 'bill') {
-      const item: Bill = { id: spec.bill?.id ?? uid(), name: name.trim(), category, amount: m, day }
-      dispatch({ type: spec.bill ? 'updateBill' : 'addBill', item })
-    } else {
-      const item: Debt = {
-        id: spec.debt?.id ?? uid(), name: name.trim(), category, total: tot, remaining: Math.min(rem, tot),
-        monthlyPayment: m, nextPaymentDate: next || upcomingDate(), payments: spec.debt?.payments ?? [],
-      }
-      dispatch({ type: spec.debt ? 'updateDebt' : 'addDebt', item })
-    }
-    toast(editing ? 'Сохранено' : `Добавлено: ${name.trim()}`, before)
+    dispatch({ type: 'saveBill', item: { id: item?.id ?? uid(), name: name.trim(), category, amount: n, day, ...(fromDay && { fromDay }) } })
+    toast(item ? 'Сохранено' : `Добавлено: ${name.trim()}`, before)
     onClose()
   }
 
-  const reminder = spec.bill
-    ? calendarLink(spec.bill.name, upcomingDate())
-    : spec.debt && spec.debt.remaining > 0
-      ? calendarLink(spec.debt.name, spec.debt.nextPaymentDate, Math.ceil(spec.debt.remaining / spec.debt.monthlyPayment))
-      : null
-
   return (
-    <Sheet title={editing ? name || 'Платёж' : 'Новый платёж'} onClose={onClose}>
+    <Sheet title={item ? item.name : 'Обязательный платёж'} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4 pb-1">
-        {!editing && (
-          <Segmented value={type} onChange={(v) => { setType(v); if (v === 'debt' && !spec.preset) setCategory('Кредит') }}
-            options={[{ value: 'bill', label: 'Ежемесячный' }, { value: 'debt', label: 'Кредит / рассрочка' }]} />
-        )}
         <Field label="Название">
-          <input className="field" placeholder={type === 'debt' ? 'Кредит за машину' : 'Netflix, Vodafone, фитнес…'} value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="field" placeholder="Квартира, Vodafone, фитнес…" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label={type === 'debt' ? 'Платёж в месяц' : 'Сумма в месяц'}>
+          <Field label="Сумма в месяц">
             <input className="field num !text-xl" inputMode="decimal" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ''))} />
           </Field>
-          <Field label="Каждое … число">
-            <div className="flex items-center gap-1">
-              <button type="button" className="btn-soft !px-3.5 !py-3" onClick={() => { setDay(Math.max(1, day - 1)); setNext('') }}>−</button>
-              <span className="num flex-1 text-center text-xl">{day}</span>
-              <button type="button" className="btn-soft !px-3.5 !py-3" onClick={() => { setDay(Math.min(31, day + 1)); setNext('') }}>+</button>
-            </div>
-          </Field>
+          <Field label="Списывается числа"><DayStepper value={day} onChange={setDay} /></Field>
         </div>
-        {type === 'debt' && (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Сумма кредита">
-                <input className="field" inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} />
-              </Field>
-              <Field label="Осталось выплатить">
-                <input className="field" inputMode="decimal" placeholder="= сумме" value={remaining} onChange={(e) => setRemaining(e.target.value)} />
-              </Field>
-            </div>
-            <Field label="Следующий платёж">
-              <input className="field" type="date" value={next || upcomingDate()} onChange={(e) => { setNext(e.target.value); if (e.target.value) setDay(Number(e.target.value.slice(8))) }} />
-            </Field>
-          </>
-        )}
+        <FundingPicker value={fromDay} onChange={setFromDay} />
         <Field label="Категория">
-          <CategoryPicker value={category} onChange={(c) => { setCategory(c); if (!name.trim()) setName(c) }}
-            groups={type === 'debt' ? ['credit'] : MANDATORY_GROUPS.filter((g) => g !== 'credit')} />
+          <CategoryPicker value={category} onChange={(c) => { setCategory(c); if (!name.trim()) setName(c) }} groups={BILL_GROUPS} />
         </Field>
-        <button className="btn w-full" type="submit" disabled={!valid}>{editing ? 'Сохранить' : 'Добавить'}</button>
-        {reminder && (
-          <a href={reminder} target="_blank" rel="noreferrer"
-            className="btn-soft flex w-full items-center justify-center gap-2 text-center">
-            <IconBell /> Напоминание в Google Календаре
-          </a>
-        )}
-        {editing && (
-          <DeleteButton label={type === 'debt' ? 'Удалить кредит' : 'Удалить платёж'} onDelete={() => {
+        <button className="btn w-full" type="submit" disabled={!valid}>{item ? 'Сохранить' : 'Добавить'}</button>
+        {item && <Reminder href={calendarLink(item.name, nextDue(item.day))} />}
+        {item && (
+          <DeleteButton label="Удалить платёж" onDelete={() => {
             const before = data
-            dispatch(spec.debt ? { type: 'deleteDebt', id: spec.debt.id } : { type: 'deleteBill', id: spec.bill!.id })
+            dispatch({ type: 'deleteBill', id: item.id })
             toast('Удалено', before)
             onClose()
           }} />
@@ -483,93 +451,150 @@ function ObligationSheet({ spec, onClose }: { spec: Extract<Overlay, { kind: 'ob
   )
 }
 
-/* ---------- Лимит ---------- */
+/* ---------- Кредит ---------- */
 
-const TOTAL = '__total__'
-
-function LimitSheet({ item, onClose }: { item?: Limit; onClose: () => void }) {
-  const { dispatch } = useStore()
-  const [target, setTarget] = useState(item ? item.category ?? TOTAL : TOTAL)
-  const [amount, setAmount] = useState(numStr(item?.amount))
-  const n = parseAmount(amount)
+function CreditSheet({ item, preset, onClose }: { item?: Credit; preset?: { name: string; category: string }; onClose: () => void }) {
+  const { data, dispatch } = useStore()
+  const { toast } = useUI()
+  const [name, setName] = useState(item?.name ?? preset?.name ?? '')
+  const [category, setCategory] = useState(item?.category ?? preset?.category ?? 'Кредит')
+  const [monthly, setMonthly] = useState(numStr(item?.monthly))
+  const [day, setDay] = useState(item?.day ?? 1)
+  const [left, setLeft] = useState(numStr(item ? creditLeft(item) : undefined))
+  const [fromDay, setFromDay] = useState(item?.fromDay)
+  const m = parseAmount(monthly)
+  const l = parseAmount(left)
+  const valid = !!name.trim() && m > 0 && l >= 0
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (!(n > 0)) return
-    dispatch({ type: 'setLimit', item: { id: item?.id ?? uid(), category: target === TOTAL ? null : target, amount: n } })
+    if (!valid) return
+    const before = data
+    // остаток указан «на сегодня»: платежи до сегодняшнего дня включительно уже учтены
+    dispatch({ type: 'saveCredit', item: { id: item?.id ?? uid(), name: name.trim(), category, monthly: m, day, remaining: l, asOf: todayISO(), ...(fromDay && { fromDay }) } })
+    toast(item ? 'Сохранено' : `Добавлено: ${name.trim()}`, before)
     onClose()
   }
 
+  const months = m > 0 && l > 0 ? Math.ceil(l / m - 1e-9) : 0
+  const next = item ? creditNext(item) : null
+
   return (
-    <Sheet title={item ? 'Лимит' : 'Новый лимит'} onClose={onClose}>
+    <Sheet title={item ? item.name : 'Кредит'} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4 pb-1">
-        <Field label="Сумма за период">
-          <input className="field num !text-2xl" inputMode="decimal" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ''))} />
+        <Field label="Название">
+          <input className="field" placeholder="Кредит за машину" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="На что">
-          <button type="button" onClick={() => setTarget(TOTAL)} className={`chip mb-3 ${target === TOTAL ? 'chip-on' : ''}`}>💼 Все расходы</button>
-          <CategoryPicker value={target} onChange={setTarget} groups={['daily', 'car', 'sport', 'other']} />
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Платёж в месяц">
+            <input className="field num !text-xl" inputMode="decimal" placeholder="0" value={monthly} onChange={(e) => setMonthly(e.target.value.replace(/[^\d.,]/g, ''))} />
+          </Field>
+          <Field label="Списывается числа"><DayStepper value={day} onChange={setDay} /></Field>
+        </div>
+        <Field label="Сколько осталось выплатить сейчас">
+          <input className="field num !text-xl" inputMode="decimal" placeholder="0" value={left} onChange={(e) => setLeft(e.target.value.replace(/[^\d.,]/g, ''))} />
+          {months > 0 && <p className="mt-1.5 text-[13px] text-ink2">≈ {months} мес. платежей. Остаток будет уменьшаться сам каждый месяц.</p>}
         </Field>
-        <button className="btn w-full" type="submit" disabled={!(n > 0)}>Сохранить</button>
-        {item && <DeleteButton label="Удалить лимит" onDelete={() => { dispatch({ type: 'deleteLimit', id: item.id }); onClose() }} />}
+        <FundingPicker value={fromDay} onChange={setFromDay} />
+        <Field label="Категория">
+          <div className="flex flex-wrap gap-1.5">
+            {data.categories.filter((c) => c.group === 'credit').map((c) => (
+              <button key={c.name} type="button" onClick={() => setCategory(c.name)} className={`chip ${category === c.name ? 'chip-on' : ''}`}>{c.icon} {c.name}</button>
+            ))}
+          </div>
+        </Field>
+        <button className="btn w-full" type="submit" disabled={!valid}>{item ? 'Сохранить' : 'Добавить кредит'}</button>
+        {item && next && <Reminder href={calendarLink(item.name, next.date, creditMonthsLeft(item))} />}
+        {item && (
+          <DeleteButton label="Удалить кредит" onDelete={() => {
+            const before = data
+            dispatch({ type: 'deleteCredit', id: item.id })
+            toast('Удалено', before)
+            onClose()
+          }} />
+        )}
       </form>
     </Sheet>
   )
 }
 
-/* ---------- Сколько на счету ---------- */
+/* ---------- Сколько на руках ---------- */
 
 function BalanceSheet({ onClose }: { onClose: () => void }) {
   const { dispatch, data } = useStore()
   const [amount, setAmount] = useState('')
   const n = parseAmount(amount || '0')
   return (
-    <Sheet title="Сколько сейчас на счету?" onClose={onClose}>
-      <p className="-mt-1 mb-3 text-sm text-ink2">Посмотрите в банковском приложении. Дальше остаток будет считаться сам по вашим записям.</p>
+    <Sheet title="Сколько сейчас на руках?" onClose={onClose}>
+      <p className="-mt-1 mb-3 text-sm text-ink2">Все деньги на картах и наличными. Если ничего нет, оставьте 0. Дальше сумма будет считаться сама.</p>
       <p className="num mb-3 text-center text-[40px]">{amountView(amount)} <span className="text-2xl">{data.settings.currency}</span></p>
       <div className="space-y-2 pb-1">
         <Keypad value={amount} onChange={setAmount} />
         <button type="button" className="btn w-full" onClick={() => { dispatch({ type: 'setSettings', patch: { balance: { amount: n, ts: Date.now() } } }); onClose() }}>
           Сохранить {fmtMoney(n)}
         </button>
-        {data.settings.balance && (
-          <button type="button" className="btn-soft w-full" onClick={() => { dispatch({ type: 'setSettings', patch: { balance: null } }); onClose() }}>
-            Не вести остаток
-          </button>
-        )}
       </div>
     </Sheet>
   )
 }
 
-/* ---------- Зарплата ---------- */
+/* ---------- Зарплаты ---------- */
 
-export function SalarySheet({ onClose }: { onClose: () => void }) {
+type PaydayDraft = { id: string; name: string; day: number; amount: string }
+
+function SalarySheet({ onClose }: { onClose: () => void }) {
   const { dispatch, data } = useStore()
-  const [day, setDay] = useState<number>(data.settings.payday ?? 15)
-  const [salary, setSalary] = useState(numStr(data.settings.salary))
+  const { toast } = useUI()
+  const [rows, setRows] = useState<PaydayDraft[]>(
+    data.settings.paydays.length
+      ? [...data.settings.paydays].sort((a, b) => a.day - b.day).map((p) => ({ ...p, amount: numStr(p.amount) }))
+      : [{ id: uid(), name: 'Зарплата', day: 15, amount: '' }],
+  )
   const [currency, setCurrency] = useState(data.settings.currency)
+  const set = (id: string, patch: Partial<PaydayDraft>) => setRows(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)))
 
   const save = () => {
-    dispatch({ type: 'setSettings', patch: { payday: day, salary: parseAmount(salary || '0') || 0, currency } })
+    const paydays: Payday[] = rows
+      .map((r) => ({ id: r.id, name: r.name.trim() || 'Зарплата', day: r.day, amount: parseAmount(r.amount || '0') || 0 }))
+      .filter((p) => p.amount > 0)
+    dispatch({ type: 'setSettings', patch: { paydays, currency } })
+    toast('Зарплаты сохранены')
     onClose()
   }
 
   return (
-    <Sheet title="Зарплата" onClose={onClose}>
-      <div className="space-y-4 pb-1">
-        <p className="-mt-1 text-sm text-ink2">План и бюджет считаются от зарплаты до зарплаты. Так понятно, сколько можно тратить до следующего поступления.</p>
-        <Field label="Какого числа приходит">
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-              <button key={d} type="button" onClick={() => setDay(d)}
-                className={`h-10 rounded-xl text-sm font-semibold ${day === d ? 'bg-ink text-white' : 'bg-soft'}`}>{d}</button>
-            ))}
+    <Sheet title="Мои зарплаты" onClose={onClose}>
+      <div className="space-y-3 pb-1">
+        <p className="-mt-1 text-sm text-ink2">Укажите все поступления: например, 1-го одна сумма, 15-го другая.</p>
+        {rows.map((r, i) => (
+          <div key={r.id} className="space-y-2 rounded-2xl bg-soft p-3">
+            <div className="flex items-center gap-2">
+              <input className="field !bg-white !py-2" value={r.name} placeholder="Зарплата" onChange={(e) => set(r.id, { name: e.target.value })} />
+              {rows.length > 1 && (
+                <button type="button" aria-label="Убрать" onClick={() => setRows(rows.filter((x) => x.id !== r.id))}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-ink2">✕</button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Сумма">
+                <input className="field num !bg-white !text-lg" inputMode="decimal" placeholder="0" value={r.amount} autoFocus={i === 0 && !r.amount}
+                  onChange={(e) => set(r.id, { amount: e.target.value.replace(/[^\d.,]/g, '') })} />
+              </Field>
+              <Field label="Приходит числа">
+                <div className="flex items-center gap-1">
+                  <button type="button" className="h-11 w-10 rounded-xl bg-white font-bold" onClick={() => set(r.id, { day: Math.max(1, r.day - 1) })}>−</button>
+                  <span className="num flex-1 text-center text-lg">{r.day}</span>
+                  <button type="button" className="h-11 w-10 rounded-xl bg-white font-bold" onClick={() => set(r.id, { day: Math.min(31, r.day + 1) })}>+</button>
+                </div>
+              </Field>
+            </div>
           </div>
-        </Field>
-        <Field label="Сколько примерно приходит">
-          <input className="field num !text-2xl" inputMode="decimal" placeholder="0" value={salary} onChange={(e) => setSalary(e.target.value.replace(/[^\d.,]/g, ''))} />
-        </Field>
+        ))}
+        {rows.length < 4 && (
+          <button type="button" className="btn-soft w-full" onClick={() => setRows([...rows, { id: uid(), name: rows.length ? 'Аванс' : 'Зарплата', day: 1, amount: '' }])}>
+            + Ещё одно поступление
+          </button>
+        )}
         <Field label="Валюта">
           <div className="flex flex-wrap gap-1.5">
             {CURRENCIES.map((c) => (
@@ -578,13 +603,7 @@ export function SalarySheet({ onClose }: { onClose: () => void }) {
           </div>
         </Field>
         <button type="button" className="btn w-full" onClick={save}>Сохранить</button>
-        {data.settings.payday && (
-          <button type="button" className="btn-soft w-full" onClick={() => { dispatch({ type: 'setSettings', patch: { payday: null, salary: 0 } }); onClose() }}>
-            Считать по календарным месяцам
-          </button>
-        )}
       </div>
     </Sheet>
   )
 }
-

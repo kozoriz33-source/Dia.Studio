@@ -4,8 +4,8 @@ import { IconCalendar, IconHistory, IconHome, IconPlus, IconTarget } from './ico
 
 const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: 'home', label: 'Главная', icon: <IconHome /> },
-  { id: 'history', label: 'История', icon: <IconHistory /> },
-  { id: 'payments', label: 'Платежи', icon: <IconCalendar /> },
+  { id: 'months', label: 'Месяцы', icon: <IconHistory /> },
+  { id: 'payments', label: 'Обязательные', icon: <IconCalendar /> },
   { id: 'plan', label: 'План', icon: <IconTarget /> },
 ]
 

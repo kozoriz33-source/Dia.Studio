@@ -1,220 +1,154 @@
 import { useState } from 'react'
-import { Bar, Card, CatIcon, Empty, Head, Screen, Segmented, TextBtn } from '../components/ui'
+import { Bar, Card, Empty, Screen } from '../components/ui'
 import { useUI } from '../components/overlays'
-import { byCategory, getPeriod, sum } from '../lib/calc'
-import { GROUPS, MANDATORY_GROUPS, catInfo } from '../lib/categories'
-import { periodPlan } from '../lib/plan'
-import { dateLabel, fmtMoney } from '../lib/format'
+import { salaryAround, salaryPlan } from '../lib/calc'
+import { catInfo } from '../lib/categories'
+import { dateLabel, daysBetween, fmtMoney, todayISO, weekdayShort } from '../lib/format'
 import { useStore } from '../lib/store'
 import type { PlanShares } from '../lib/types'
 
 export default function Plan() {
   const { data, dispatch } = useStore()
   const { open } = useUI()
-  const [offset, setOffset] = useState<'0' | '1'>('0')
-  const plan = periodPlan(data, Number(offset))
+  const today = todayISO()
+  const { last, upcoming } = salaryAround(data, today, 3)
+  const options = [...(last ? [last] : []), ...upcoming]
+  const defaultIdx = !last || (upcoming[0] && daysBetween(today, upcoming[0].date) <= 8) ? (last ? 1 : 0) : 0
+  const [idx, setIdx] = useState(defaultIdx)
   const shares = data.settings.plan
-  const [showMandatory, setShowMandatory] = useState(false)
-  const nextP = getPeriod(data.settings.payday, 1)
-  const curP = getPeriod(data.settings.payday, 0)
 
+  if (!options.length) {
+    return (
+      <Screen title="План">
+        <Card>
+          <Empty icon="🧭" title="Сначала укажите зарплаты">Когда и сколько приходит. После этого я посчитаю, сколько отложить на обязательные и сколько остаётся</Empty>
+          <button type="button" className="btn w-full" onClick={() => open({ kind: 'salary' })}>Указать зарплаты</button>
+        </Card>
+      </Screen>
+    )
+  }
+
+  const sel = options[Math.min(idx, options.length - 1)]
+  const p = salaryPlan(data, sel, today)
   const step = (key: keyof PlanShares, d: number) =>
     dispatch({ type: 'setPlan', plan: { ...shares, [key]: Math.max(0, Math.min(100, shares[key] + d)) } })
 
-  const cats = byCategory(plan.expenses.filter((e) => !e.billId && !e.debtId)).slice(0, 6)
-  const catsTotal = sum(cats.map((c) => ({ amount: c.value })))
-
   return (
     <Screen title="План">
-      <div className="animate-rise space-y-2">
-        <Segmented value={offset} onChange={setOffset}
-          options={[{ value: '0', label: curP.byPayday ? 'До зарплаты' : 'Этот месяц' }, { value: '1', label: curP.byPayday ? `С ${dateLabel(nextP.start)}` : 'Следующий' }]} />
-        <p className="px-1 text-center text-[13px] font-medium text-ink2">Период: {plan.period.label}</p>
-        {!data.settings.payday && (
-          <button type="button" onClick={() => open({ kind: 'salary' })} className="w-full rounded-2xl bg-accentSoft p-3 text-left text-[13px] font-semibold text-accent">
-            💡 Укажите день зарплаты, и план будет считаться от зарплаты до зарплаты
-          </button>
-        )}
+      {/* Выбор зарплаты */}
+      <div className="-mx-4 flex animate-rise gap-2 overflow-x-auto px-4 pb-1">
+        {options.map((o, i) => {
+          const on = o === sel
+          const isLast = o === last
+          return (
+            <button key={o.date + o.payday.id} type="button" onClick={() => setIdx(i)}
+              className={`shrink-0 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-95 ${on ? 'bg-ink text-white' : 'bg-white shadow-card'}`}>
+              <p className={`text-[11px] font-semibold ${on ? 'text-white/60' : 'text-ink3'}`}>{isLast ? 'Текущая' : `через ${daysBetween(today, o.date) - 1} дн.`}</p>
+              <p className="text-[14px] font-bold">{o.payday.name} {dateLabel(o.date)}</p>
+            </button>
+          )
+        })}
       </div>
 
-      {plan.income === 0 ? (
-        <Card>
-          <Empty icon="🧭" title="Нет дохода в этом периоде">Укажите зарплату или запишите доход, и я распишу, сколько куда направить</Empty>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" className="btn" onClick={() => open({ kind: 'salary' })}>Зарплата</button>
-            <button type="button" className="btn-soft" onClick={() => open({ kind: 'quick', mode: 'income' })}>Записать доход</button>
+      {/* Расчёт */}
+      <Card>
+        <button type="button" className="flex w-full items-center justify-between gap-2 text-left" onClick={() => open({ kind: 'salary' })}>
+          <div>
+            <p className="font-bold">{sel.payday.name} {dateLabel(sel.date)}</p>
+            <p className="text-[13px] text-ink2">{p.received > 0 ? 'получено' : p.status === 'future' ? 'ожидается' : 'ожидалась'} · до {dateLabel(p.next)}</p>
           </div>
-        </Card>
-      ) : (
-        <>
-          {/* Доход → обязательные → свободно */}
-          <Card>
-            <Row icon="💰" label={plan.incomeIsExpected ? 'Зарплата (ожидается)' : 'Доход'} value={`+${fmtMoney(plan.income)}`} tone="ok" />
-            <button type="button" className="w-full text-left" onClick={() => setShowMandatory(!showMandatory)}>
-              <Row icon="📌" label="Обязательные платежи" sub={`${plan.events.length} шт. · ${showMandatory ? 'скрыть' : 'показать список'}`} value={`−${fmtMoney(plan.mandatory)}`} />
-            </button>
-            {showMandatory && (
-              <div className="mb-2 ml-9 animate-fade space-y-2 rounded-2xl bg-soft p-3">
-                {plan.events.length === 0 && <p className="text-[13px] text-ink2">Нет обязательных платежей в этом периоде</p>}
-                {MANDATORY_GROUPS.filter((g) => plan.byGroup.has(g)).map((g) => (
-                  <div key={g}>
-                    <div className="flex justify-between text-[13px] font-bold" style={{ color: GROUPS[g].color }}>
-                      <span>{GROUPS[g].label}</span><span>{fmtMoney(sum(plan.byGroup.get(g)!))}</span>
-                    </div>
-                    {plan.byGroup.get(g)!.map((e) => (
-                      <div key={e.key} className="flex justify-between text-[13px] text-ink2">
-                        <span>{e.paid ? '✓ ' : ''}{e.name}</span><span>{fmtMoney(e.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="mt-1 border-t border-dashed border-line pt-3">
-              <div className="flex items-end justify-between gap-2">
-                <p className="font-bold">Свободно</p>
-                <p className={`num text-[30px] leading-none ${plan.free < 0 ? 'text-warn' : 'text-accent'}`}>{fmtMoney(plan.free)}</p>
-              </div>
-            </div>
-            {plan.free < 0 && (
-              <p className="mt-3 rounded-2xl bg-warnSoft p-3 text-[13px] text-warn">
-                Обязательные платежи больше дохода на {fmtMoney(-plan.free)}. Посмотрите, от каких подписок можно отказаться.
-              </p>
-            )}
-          </Card>
+          <span className="num text-[22px] text-ok">+{fmtMoney(p.income)}</span>
+        </button>
 
-          {plan.free > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-[17px] font-bold">Куда направить {fmtMoney(plan.free)}</h2>
-                <span className={`text-[12px] font-bold ${plan.totalShare === 100 ? 'text-ink3' : 'text-warn'}`}>{plan.totalShare}%</span>
-              </div>
-              {plan.totalShare !== 100 && (
-                <p className="-mt-1 px-1 text-[13px] text-warn">
-                  {plan.totalShare < 100 ? `Ещё не распределено ${100 - plan.totalShare}%` : `Распределено больше 100% на ${plan.totalShare - 100}%`}
+        <div className="mt-4 rounded-2xl bg-soft p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="font-bold">Отложить на обязательные</p>
+            <span className="num text-[17px]">−{fmtMoney(p.setAside)}</span>
+          </div>
+          {p.list.length === 0 ? (
+            <p className="text-[13px] text-ink2">С этой зарплаты нет обязательных платежей</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {p.list.map((c) => (
+                <li key={c.key} className="flex items-center gap-2 text-[14px]">
+                  <span className="w-[62px] shrink-0 text-[12px] font-semibold text-ink3">{dateLabel(c.date)} {weekdayShort(c.date)}</span>
+                  <span>{catInfo(data.categories, c.category).icon}</span>
+                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                  <span className="num whitespace-nowrap">{fmtMoney(c.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-end justify-between gap-2">
+          <p className="font-bold">Остаётся</p>
+          <p className={`num text-[32px] leading-none ${p.free < 0 ? 'text-warn' : 'text-accent'}`}>{fmtMoney(p.free)}</p>
+        </div>
+        {p.free < 0 && (
+          <p className="mt-3 rounded-2xl bg-warnSoft p-3 text-[13px] text-warn">
+            Этой зарплаты не хватает на обязательные платежи: не хватает {fmtMoney(-p.free)}. Перенесите часть платежей на другую зарплату во вкладке «Обязательные».
+          </p>
+        )}
+      </Card>
+
+      {/* Распределение */}
+      {p.free > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-[17px] font-bold">Куда деть {fmtMoney(p.free)}</h2>
+            <span className={`text-[12px] font-bold ${p.totalShare === 100 ? 'text-ink3' : 'text-warn'}`}>{p.totalShare}%</span>
+          </div>
+          {p.totalShare !== 100 && (
+            <p className="-mt-1 px-1 text-[13px] text-warn">
+              {p.totalShare < 100 ? `Не распределено ${100 - p.totalShare}% (${fmtMoney((p.free * (100 - p.totalShare)) / 100)})` : `Больше 100% на ${p.totalShare - 100}%`}
+            </p>
+          )}
+          {p.buckets.map((b, i) => {
+            const over = b.left < 0
+            const showActual = p.status !== 'future'
+            return (
+              <Card key={b.key} delay={i * 40}>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-xl" style={{ background: `${b.color}1A` }}>{b.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold">{b.label}</p>
+                    <p className="num text-[20px]" style={{ color: b.color }}>{fmtMoney(b.planned)}</p>
+                  </div>
+                  <div className="flex items-center rounded-2xl bg-soft p-1">
+                    <button type="button" aria-label="Меньше" onClick={() => step(b.key, -5)} className="h-8 w-8 rounded-xl text-lg font-bold text-ink2 active:bg-white">−</button>
+                    <span className="w-10 text-center text-sm font-bold">{b.share}%</span>
+                    <button type="button" aria-label="Больше" onClick={() => step(b.key, 5)} className="h-8 w-8 rounded-xl text-lg font-bold text-ink2 active:bg-white">+</button>
+                  </div>
+                </div>
+                <p className="mt-1 text-[13px] text-ink2">
+                  {b.key === 'life' ? `≈ ${fmtMoney(b.planned / p.days)} в день · ${b.hint}` : b.hint}
                 </p>
-              )}
-              {plan.buckets.map((b, i) => {
-                const over = b.left < 0
-                return (
-                  <Card key={b.key} delay={i * 40}>
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-xl" style={{ background: `${b.color}1A` }}>{b.icon}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold">{b.label}</p>
-                        <p className="truncate text-[12px] text-ink2">{b.hint}</p>
-                      </div>
-                      <div className="flex items-center rounded-2xl bg-soft p-1">
-                        <button type="button" aria-label="Меньше" onClick={() => step(b.key, -5)} className="h-8 w-8 rounded-xl text-lg font-bold text-ink2 active:bg-white">−</button>
-                        <span className="w-10 text-center text-sm font-bold">{b.share}%</span>
-                        <button type="button" aria-label="Больше" onClick={() => step(b.key, 5)} className="h-8 w-8 rounded-xl text-lg font-bold text-ink2 active:bg-white">+</button>
-                      </div>
-                    </div>
-                    <div className="mb-2 mt-3 flex items-baseline justify-between">
-                      <span className="num text-[24px]" style={{ color: b.color }}>{fmtMoney(b.planned)}</span>
-                      <span className={`text-[13px] ${over && b.key === 'life' ? 'font-semibold text-warn' : 'text-ink2'}`}>
-                        {b.key === 'life' ? 'потрачено' : 'отложено'} {fmtMoney(b.actual)}
-                      </span>
-                    </div>
+                {showActual && (
+                  <div className="mt-3">
                     <Bar value={b.actual} max={b.planned} color={b.color} warn={b.key === 'life' && over} />
-                    <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
                       <p className={`text-[13px] ${over && b.key === 'life' ? 'font-semibold text-warn' : 'text-ink2'}`}>
                         {b.key === 'life'
-                          ? over ? `Перерасход ${fmtMoney(-b.left)}` : offset === '0' ? `Осталось ${fmtMoney(b.left)} · ≈ ${fmtMoney(plan.perDay)}/день` : `≈ ${fmtMoney(plan.perDay)} в день`
-                          : b.left > 0 ? `Отложить ещё ${fmtMoney(b.left)}` : '✓ Готово'}
+                          ? over ? `Перерасход ${fmtMoney(-b.left)}` : `Потрачено ${fmtMoney(b.actual)} · осталось ${fmtMoney(b.left)}${p.status === 'current' ? ` · ${fmtMoney(p.perDay)}/день` : ''}`
+                          : b.left > 0 ? `Отложено ${fmtMoney(b.actual)} · ещё ${fmtMoney(b.left)}` : '✓ Отложено'}
                       </p>
-                      {b.category && b.left > 0 && offset === '0' && (
+                      {b.category && b.left > 0 && p.status === 'current' && (
                         <button type="button" className="rounded-full bg-ink px-3 py-1 text-[12px] font-bold text-white active:scale-95"
-                          onClick={() => open({ kind: 'quick', category: b.category })}>
-                          Отложить
-                        </button>
+                          onClick={() => open({ kind: 'quick', category: b.category })}>Отложить</button>
                       )}
                     </div>
-                  </Card>
-                )
-              })}
-              <p className="px-2 text-[13px] leading-relaxed text-ink2">
-                💡 Откладывайте сразу в день зарплаты, а не в конце. Сначала подушка безопасности на 3–6 месяцев расходов, потом инвестиции.
-                Проценты меняются кнопками − и +.
-              </p>
-            </section>
-          )}
-        </>
-      )}
-
-      {cats.length > 0 && (
-        <Card>
-          <Head>На что уходят деньги</Head>
-          <ul className="space-y-3">
-            {cats.map((c) => {
-              const info = catInfo(data.categories, c.name)
-              return (
-                <li key={c.name} className="flex items-center gap-3">
-                  <CatIcon cat={info} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex justify-between gap-2 text-sm">
-                      <span className="truncate font-semibold">{c.name}</span>
-                      <span className="num whitespace-nowrap">{fmtMoney(c.value)}</span>
-                    </div>
-                    <Bar value={c.value} max={catsTotal} color={GROUPS[info.group].color} height={6} />
                   </div>
-                </li>
-              )
-            })}
-          </ul>
-        </Card>
-      )}
-
-      <Limits expenses={plan.expenses} />
-    </Screen>
-  )
-}
-
-const Row = ({ icon, label, sub, value, tone }: { icon: string; label: string; sub?: string; value: string; tone?: 'ok' }) => (
-  <div className="flex items-center gap-3 py-2">
-    <span className="w-6 text-center text-lg">{icon}</span>
-    <div className="min-w-0 flex-1">
-      <p className="font-semibold">{label}</p>
-      {sub && <p className="text-[12px] text-ink2">{sub}</p>}
-    </div>
-    <span className={`num whitespace-nowrap text-[17px] ${tone === 'ok' ? 'text-ok' : ''}`}>{value}</span>
-  </div>
-)
-
-function Limits({ expenses }: { expenses: ReturnType<typeof periodPlan>['expenses'] }) {
-  const { data } = useStore()
-  const { open } = useUI()
-  const limits = [...data.limits].sort((a, b) => (a.category === null ? -1 : b.category === null ? 1 : 0))
-  return (
-    <Card>
-      <Head right={<TextBtn onClick={() => open({ kind: 'limit' })}>+ Лимит</TextBtn>}>Лимиты</Head>
-      {limits.length === 0 ? (
-        <p className="text-sm text-ink2">Например: не больше 200 € на кафе за период. Когда подойдёте к лимиту, полоска станет оранжевой.</p>
-      ) : (
-        <ul className="space-y-4">
-          {limits.map((l) => {
-            const spent = sum(l.category === null ? expenses : expenses.filter((e) => e.category === l.category))
-            const ratio = spent / l.amount
-            const warn = ratio >= 0.8
-            const cat = l.category ? catInfo(data.categories, l.category) : { name: 'Все расходы', group: 'other' as const, icon: '💼' }
-            return (
-              <li key={l.id}>
-                <button type="button" className="w-full text-left" onClick={() => open({ kind: 'limit', item: l })}>
-                  <div className="mb-1.5 flex items-center gap-2">
-                    <span>{cat.icon}</span>
-                    <span className="flex-1 font-semibold">{l.category ?? 'Все расходы'}</span>
-                    <span className="text-[13px] text-ink2"><b className={`num ${warn ? 'text-warn' : 'text-ink'}`}>{fmtMoney(spent)}</b> / {fmtMoney(l.amount)}</span>
-                  </div>
-                  <Bar value={spent} max={l.amount} warn={warn} color="#2F5BFF" />
-                  <p className={`mt-1 text-[12px] ${warn ? 'font-semibold text-warn' : 'text-ink3'}`}>
-                    {ratio > 1 ? `Превышен на ${fmtMoney(spent - l.amount)}` : `Осталось ${fmtMoney(l.amount - spent)}`}
-                  </p>
-                </button>
-              </li>
+                )}
+              </Card>
             )
           })}
-        </ul>
+          <p className="px-2 text-[13px] leading-relaxed text-ink2">
+            💡 В день зарплаты сразу переведите сумму на обязательные на отдельный счёт или в копилку, тогда точно хватит. Проценты меняются кнопками − и +.
+          </p>
+        </section>
       )}
-    </Card>
+
+    </Screen>
   )
 }

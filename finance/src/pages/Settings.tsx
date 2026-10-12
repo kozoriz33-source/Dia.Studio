@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { Card, Field, Head, Screen } from '../components/ui'
+import { Card, DeleteButton, Field, Head, Screen } from '../components/ui'
 import { useUI } from '../components/overlays'
 import { IconBack } from '../components/icons'
 import { currentBalance } from '../lib/calc'
 import { CURRENCIES, fmtMoney } from '../lib/format'
 import { GROUPS, GROUP_ORDER, ICON_CHOICES } from '../lib/categories'
-import { migrate, useStore } from '../lib/store'
+import { emptyData, normalize, useStore } from '../lib/store'
 import type { GroupId } from '../lib/types'
 
 export default function Settings({ back }: { back: () => void }) {
@@ -19,7 +19,7 @@ export default function Settings({ back }: { back: () => void }) {
   const balance = currentBalance(data)
 
   const usage = (n: string) =>
-    data.expenses.filter((e) => e.category === n).length + data.bills.filter((b) => b.category === n).length + data.debts.filter((d) => d.category === n).length
+    data.expenses.filter((e) => e.category === n).length + data.bills.filter((b) => b.category === n).length + data.credits.filter((c) => c.category === n).length
 
   const add = (e: FormEvent) => {
     e.preventDefault()
@@ -42,7 +42,8 @@ export default function Settings({ back }: { back: () => void }) {
 
   const restore = () => {
     try {
-      const d = migrate(JSON.parse(backup))
+      const d = normalize(JSON.parse(backup))
+      if (d.updatedAt === 0 && !d.bills.length && !d.incomes.length && !d.expenses.length) throw new Error('empty')
       dispatch({ type: 'replaceAll', data: { ...d, updatedAt: Date.now() } })
       setMsg('Данные восстановлены.')
       setBackup('')
@@ -66,8 +67,8 @@ export default function Settings({ back }: { back: () => void }) {
       <Card><p className="text-[14px] leading-relaxed text-ink2">{syncText}</p></Card>
 
       <Card delay={40} className="!p-0">
-        <SettingRow label="Зарплата" value={data.settings.payday ? `${data.settings.payday} числа · ${fmtMoney(data.settings.salary)}` : 'не указана'} onClick={() => open({ kind: 'salary' })} />
-        <SettingRow label="Сейчас на счету" value={balance === null ? 'не указано' : fmtMoney(balance)} onClick={() => open({ kind: 'balance' })} />
+        <SettingRow label="Зарплаты" value={data.settings.paydays.length ? [...data.settings.paydays].sort((a, b) => a.day - b.day).map((p) => `${p.day}-го ${fmtMoney(p.amount)}`).join(', ') : 'не указаны'} onClick={() => open({ kind: 'salary' })} />
+        <SettingRow label="Сейчас на руках" value={balance === null ? 'не указано' : fmtMoney(balance)} onClick={() => open({ kind: 'balance' })} />
         <div className="px-4 py-3.5">
           <p className="mb-2 font-semibold">Валюта</p>
           <div className="flex flex-wrap gap-1.5">
@@ -136,6 +137,17 @@ export default function Settings({ back }: { back: () => void }) {
           value={backup} onChange={(e) => setBackup(e.target.value)} />
         <button type="button" className="btn-soft mt-2 w-full" disabled={!backup.trim()} onClick={restore}>Восстановить из текста</button>
         {msg && <p className="mt-2 text-sm font-medium text-accent">{msg}</p>}
+      </Card>
+
+      <Card delay={160}>
+        <Head>Начать с чистого листа</Head>
+        <p className="mb-3 text-sm text-ink2">Удалит все записи, платежи, кредиты и зарплаты. Отменить можно сразу после удаления.</p>
+        <DeleteButton label="Удалить все данные" onDelete={() => {
+          const before = data
+          dispatch({ type: 'replaceAll', data: { ...emptyData(), settings: { ...emptyData().settings, currency: data.settings.currency }, updatedAt: Date.now() } })
+          toast('Все данные удалены', before)
+          back()
+        }} />
       </Card>
     </Screen>
   )

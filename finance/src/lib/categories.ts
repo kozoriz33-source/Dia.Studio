@@ -14,8 +14,8 @@ export const GROUPS: Record<GroupId, { label: string; color: string }> = {
 
 export const GROUP_ORDER: GroupId[] = ['credit', 'subs', 'telecom', 'home', 'car', 'sport', 'daily', 'savings', 'other']
 
-/** Группы обязательных ежемесячных платежей */
-export const MANDATORY_GROUPS: GroupId[] = ['credit', 'subs', 'telecom', 'home', 'car', 'sport', 'other']
+/** Группы, из которых выбирают категорию обязательного платежа */
+export const BILL_GROUPS: GroupId[] = ['home', 'telecom', 'subs', 'car', 'sport', 'other']
 
 export const DEFAULT_CATEGORIES: Category[] = [
   { name: 'Кредит за телефон', group: 'credit', icon: '📱' },
@@ -47,27 +47,23 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { name: 'Прочее', group: 'other', icon: '📦' },
 ]
 
-/** Категории старых версий, которых больше нет в списке по умолчанию */
-export const LEGACY_CATEGORIES: Record<string, Category> = {
-  'Жильё': { name: 'Жильё', group: 'home', icon: '🏠' },
-  'Связь': { name: 'Связь', group: 'telecom', icon: '📶' },
-  'Здоровье': { name: 'Здоровье', group: 'sport', icon: '💊' },
-}
+/** Готовые шаблоны для быстрого добавления */
+export const BILL_PRESETS: { name: string; category: string }[] = [
+  { name: 'Квартира', category: 'Платёж за квартиру' },
+  { name: 'Коммунальные', category: 'Коммунальные' },
+  { name: 'Vodafone', category: 'Мобильный (Vodafone)' },
+  { name: 'Интернет квартиры', category: 'Интернет квартиры' },
+  { name: 'Страховка машины', category: 'Страховка машины' },
+  { name: 'Фитнес', category: 'Фитнес' },
+  { name: 'Xbox Game Pass', category: 'Xbox' },
+  { name: 'Netflix', category: 'Netflix' },
+  { name: 'YouTube Premium', category: 'YouTube' },
+]
 
-/** Готовые шаблоны обязательных платежей для быстрого добавления */
-export const OBLIGATION_PRESETS: { name: string; category: string; kind: 'bill' | 'debt' }[] = [
-  { name: 'Кредит за телефон', category: 'Кредит за телефон', kind: 'debt' },
-  { name: 'Кредит за машину', category: 'Кредит за машину', kind: 'debt' },
-  { name: 'Кредитка', category: 'Кредитка', kind: 'debt' },
-  { name: 'Квартира', category: 'Платёж за квартиру', kind: 'bill' },
-  { name: 'Коммунальные', category: 'Коммунальные', kind: 'bill' },
-  { name: 'Vodafone', category: 'Мобильный (Vodafone)', kind: 'bill' },
-  { name: 'Интернет квартиры', category: 'Интернет квартиры', kind: 'bill' },
-  { name: 'Страховка машины', category: 'Страховка машины', kind: 'bill' },
-  { name: 'Фитнес', category: 'Фитнес', kind: 'bill' },
-  { name: 'Xbox Game Pass', category: 'Xbox', kind: 'bill' },
-  { name: 'Netflix', category: 'Netflix', kind: 'bill' },
-  { name: 'YouTube Premium', category: 'YouTube', kind: 'bill' },
+export const CREDIT_PRESETS: { name: string; category: string }[] = [
+  { name: 'Кредит за телефон', category: 'Кредит за телефон' },
+  { name: 'Кредит за машину', category: 'Кредит за машину' },
+  { name: 'Кредитка', category: 'Кредитка' },
 ]
 
 export const ICON_CHOICES = [

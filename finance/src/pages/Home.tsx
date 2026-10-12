@@ -1,32 +1,40 @@
-import { Bar, Card, CatIcon, Empty, Head, Pill, TextBtn } from '../components/ui'
+import { Card, CatIcon, Empty, Head, Pill, TextBtn } from '../components/ui'
 import OperationRow from '../components/OperationRow'
 import { useUI } from '../components/overlays'
-import { usePay } from '../components/usePay'
-import { IconCheck, IconCloud, IconGear } from '../components/icons'
-import { allOperations, byGroup, currentBalance, topCategories } from '../lib/calc'
-import { periodPlan } from '../lib/plan'
+import { IconCloud, IconGear } from '../components/icons'
+import { allOperations, charges, currentBalance, inRange, salaryAround, salaryPlan, sum, topCategories } from '../lib/calc'
 import { catInfo } from '../lib/categories'
-import { dateLabel, dayLabel, fmtMoney, todayISO } from '../lib/format'
+import { dateLabel, dayLabel, daysBetween, fmtMoney, shiftDays, todayISO, uid } from '../lib/format'
 import { useStore, type SyncStatus } from '../lib/store'
 import type { TabId } from '../lib/types'
 
 export default function Home({ go }: { go: (t: TabId) => void }) {
-  const { data, sync } = useStore()
-  const { open } = useUI()
-  const pay = usePay()
-  const plan = periodPlan(data, 0)
-  const p = plan.period
-  const life = plan.buckets[0]
-  const balance = currentBalance(data)
-  const groups = byGroup(plan.expenses, data.categories)
-  const spentTotal = groups.reduce((a, g) => a + g.value, 0)
+  const { data, dispatch, sync } = useStore()
+  const { open, toast } = useUI()
+  const today = todayISO()
+  const { last, next } = salaryAround(data, today)
+  const balance = currentBalance(data, today)
   const ops = allOperations(data).slice(0, 5)
   const quick = topCategories(data, 6)
-  const overdue = plan.unpaid.filter((e) => e.overdue)
-  const soon = plan.unpaid.filter((e) => !e.overdue).slice(0, 4)
-  const shortfall = balance !== null ? plan.toPay - balance : 0
-  const hasIncome = plan.income > 0
-  const today = todayISO()
+  const hasSalary = data.settings.paydays.length > 0
+
+  // списания до следующей зарплаты
+  const untilNext = next ? charges(data, today, shiftDays(next.date, -1)) : []
+  const dueBefore = sum(untilNext)
+  const daysToNext = next ? daysBetween(today, next.date) - 1 : 0
+  const free = balance !== null ? balance - dueBefore : null
+  const perDay = free !== null && free > 0 && daysToNext > 0 ? free / daysToNext : 0
+
+  // зарплата сегодня или недавно, но не записана
+  const unrecorded = last && daysBetween(last.date, today) <= 5 && sum(inRange(data.incomes, last.date, today)) === 0 ? last : null
+  const nextPlan = next ? salaryPlan(data, next, today) : null
+
+  const recordSalary = () => {
+    if (!unrecorded) return
+    const before = data
+    dispatch({ type: 'addIncome', item: { id: uid(), amount: unrecorded.payday.amount, source: unrecorded.payday.name, date: unrecorded.date, note: '', ts: Date.now() } })
+    toast(`+${fmtMoney(unrecorded.payday.amount)} · ${unrecorded.payday.name}`, before)
+  }
 
   return (
     <div className="space-y-4">
@@ -44,71 +52,89 @@ export default function Home({ go }: { go: (t: TabId) => void }) {
         </button>
       </header>
 
-      {/* Главная карточка */}
+      {/* Главная карточка: до зарплаты */}
       <section className="relative animate-rise overflow-hidden rounded-[28px] bg-ink p-5 text-white shadow-float">
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent/50 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-10 h-48 w-48 rounded-full bg-[#7C5CFF]/30 blur-3xl" />
         <div className="relative">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[13px] font-semibold text-white/60">
-              {p.byPayday ? `До зарплаты ${plan.daysLeft === 1 ? 'остался 1 день' : `${plan.daysLeft} дн.`} · ${dateLabel(p.next)}` : `${p.label} · ещё ${plan.daysLeft} дн.`}
-            </p>
-            {plan.incomeIsExpected && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/70">по ожидаемой зарплате</span>}
-          </div>
-
-          {hasIncome ? (
+          {!hasSalary ? (
             <>
-              <p className="mt-3 text-[13px] font-medium text-white/70">{life.left >= 0 ? 'Можно потратить на жизнь' : 'Перерасход по плану'}</p>
-              <p className={`num mt-1 text-[42px] leading-none ${life.left < 0 ? 'text-[#FF9A4D]' : ''}`}>{fmtMoney(life.left)}</p>
-              {life.left > 0 && <p className="mt-2 text-sm text-white/70">≈ <b className="text-white">{fmtMoney(plan.perDay)}</b> в день</p>}
+              <p className="text-lg font-semibold leading-snug">Начнём: укажите, когда и сколько вы получаете</p>
+              <p className="mt-1 text-sm text-white/60">Например, 1-го одна сумма, 15-го другая</p>
+              <button type="button" onClick={() => open({ kind: 'salary' })} className="mt-4 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-ink active:scale-95">
+                Указать зарплаты
+              </button>
             </>
           ) : (
-            <div className="mt-3">
-              <p className="text-lg font-semibold leading-snug">Укажите зарплату, и я распишу бюджет до следующего поступления</p>
-              <button type="button" onClick={() => open({ kind: 'salary' })} className="mt-3 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-ink active:scale-95">
-                Указать зарплату
+            <>
+              <p className="text-[13px] font-semibold text-white/60">
+                {next && (daysToNext <= 1 ? `${next.payday.name} завтра · ${dateLabel(next.date)}` : `${next.payday.name} через ${daysToNext} дн. · ${dateLabel(next.date)}`)}
+              </p>
+              <button type="button" onClick={() => open({ kind: 'balance' })} className="mt-3 block text-left">
+                <p className="text-[13px] font-medium text-white/70">Сейчас на руках</p>
+                <p className="num mt-1 text-[42px] leading-none">
+                  {balance === null ? <span className="text-[28px] text-white/50">нажмите, чтобы указать</span> : fmtMoney(balance)}
+                </p>
               </button>
-            </div>
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl bg-white/10 p-3">
+                  <p className="text-[11px] font-semibold text-white/60">Спишется до зарплаты</p>
+                  <p className="num text-[16px]">{fmtMoney(dueBefore)}</p>
+                </div>
+                <div className={`rounded-2xl p-3 ${free !== null && free < 0 ? 'bg-warn/30' : 'bg-white/10'}`}>
+                  <p className="text-[11px] font-semibold text-white/60">{free !== null && free < 0 ? 'Не хватает' : 'Можно в день'}</p>
+                  <p className="num text-[16px]">{free === null ? '—' : free < 0 ? fmtMoney(-free) : fmtMoney(perDay)}</p>
+                </div>
+              </div>
+            </>
           )}
-
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            <button type="button" onClick={() => open({ kind: 'balance' })} className="rounded-2xl bg-white/10 p-2.5 text-left active:bg-white/15">
-              <p className="text-[11px] font-semibold text-white/60">На счету</p>
-              <p className="num truncate text-[15px]">{balance === null ? <span className="text-white/60">указать</span> : fmtMoney(balance)}</p>
-            </button>
-            <button type="button" onClick={() => go('payments')} className="rounded-2xl bg-white/10 p-2.5 text-left active:bg-white/15">
-              <p className="text-[11px] font-semibold text-white/60">К оплате</p>
-              <p className="num truncate text-[15px]">{fmtMoney(plan.toPay)}</p>
-            </button>
-            <button type="button" onClick={() => go('history')} className="rounded-2xl bg-white/10 p-2.5 text-left active:bg-white/15">
-              <p className="text-[11px] font-semibold text-white/60">Потрачено</p>
-              <p className="num truncate text-[15px]">{fmtMoney(plan.spent)}</p>
-            </button>
-          </div>
         </div>
       </section>
 
-      {balance !== null && shortfall > 0 && (
-        <Card className="!bg-warnSoft">
-          <p className="font-semibold text-warn">Не хватает {fmtMoney(shortfall)} на обязательные платежи до {p.byPayday ? 'зарплаты' : 'конца месяца'}</p>
-          <p className="mt-0.5 text-[13px] text-ink2">На счету {fmtMoney(balance)}, а заплатить нужно {fmtMoney(plan.toPay)}. Отложите необязательные траты.</p>
+      {unrecorded && (
+        <Card className="flex items-center gap-3 !bg-okSoft">
+          <span className="text-2xl">💰</span>
+          <div className="flex-1">
+            <p className="font-semibold">{unrecorded.payday.name} {dateLabel(unrecorded.date)} пришла?</p>
+            <p className="text-[13px] text-ink2">Запишу {fmtMoney(unrecorded.payday.amount)}, сумму можно поправить</p>
+          </div>
+          <button type="button" className="btn !bg-ok !py-2.5 text-sm" onClick={recordSalary}>Да</button>
+        </Card>
+      )}
+
+      {/* Следующая зарплата: что отложить */}
+      {nextPlan && (
+        <Card delay={40} onClick={() => go('plan')}>
+          <Head right={<span className="text-sm font-semibold text-accent">План →</span>}>
+            {next!.payday.name} {dateLabel(next!.date)}
+          </Head>
+          <div className="space-y-2">
+            <Line label="Придёт" value={`+${fmtMoney(nextPlan.income)}`} tone="ok" />
+            <Line label={`Отложить на ${nextPlan.list.length} обязательных`} value={`−${fmtMoney(nextPlan.setAside)}`} />
+            <div className="flex items-center justify-between border-t border-dashed border-line pt-2">
+              <span className="font-bold">Останется</span>
+              <span className={`num text-[22px] ${nextPlan.free < 0 ? 'text-warn' : 'text-accent'}`}>{fmtMoney(nextPlan.free)}</span>
+            </div>
+          </div>
+          {nextPlan.list.length > 0 && (
+            <p className="mt-2 text-[13px] text-ink2">
+              На: {nextPlan.list.slice(0, 4).map((c) => `${c.name} (${dateLabel(c.date)})`).join(', ')}{nextPlan.list.length > 4 ? ` и ещё ${nextPlan.list.length - 4}` : ''}
+            </p>
+          )}
         </Card>
       )}
 
       {/* Быстрая запись */}
-      <div className="animate-rise" style={{ animationDelay: '40ms' }}>
-        <p className="label mb-2 px-1">Быстро записать</p>
+      <div className="animate-rise" style={{ animationDelay: '60ms' }}>
+        <p className="label mb-2 px-1">Быстро записать трату</p>
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {quick.map((c) => {
-            const cat = catInfo(data.categories, c)
-            return (
-              <button key={c} type="button" onClick={() => open({ kind: 'quick', category: c })}
-                className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-[20px] bg-white px-1 py-2.5 shadow-card active:scale-95">
-                <CatIcon cat={cat} size={40} />
-                <span className="line-clamp-1 w-full px-1 text-center text-[11px] font-semibold">{c}</span>
-              </button>
-            )
-          })}
+          {quick.map((c) => (
+            <button key={c} type="button" onClick={() => open({ kind: 'quick', category: c })}
+              className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-[20px] bg-white px-1 py-2.5 shadow-card active:scale-95">
+              <CatIcon cat={catInfo(data.categories, c)} size={40} />
+              <span className="line-clamp-1 w-full px-1 text-center text-[11px] font-semibold">{c}</span>
+            </button>
+          ))}
           <button type="button" onClick={() => open({ kind: 'quick', mode: 'income' })}
             className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-[20px] bg-white px-1 py-2.5 shadow-card active:scale-95">
             <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-okSoft text-xl">💰</span>
@@ -117,86 +143,39 @@ export default function Home({ go }: { go: (t: TabId) => void }) {
         </div>
       </div>
 
-      {/* Платежи */}
-      {(overdue.length > 0 || soon.length > 0 || data.bills.length + data.debts.length === 0) && (
-        <Card delay={80}>
-          <Head right={<TextBtn onClick={() => go('payments')}>Все платежи</TextBtn>}>Ближайшие платежи</Head>
-          {data.bills.length + data.debts.length === 0 ? (
-            <Empty icon="📅" title="Добавьте обязательные платежи">Кредиты, подписки, связь, квартира, фитнес. Я буду напоминать и учитывать их в бюджете.</Empty>
-          ) : (
-            <ul className="divide-y divide-line">
-              {[...overdue, ...soon].map((e) => (
-                <li key={e.key} className="flex items-center gap-3 py-2.5">
-                  <CatIcon cat={catInfo(data.categories, e.category)} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{e.name}</p>
-                    <p className={`text-[13px] ${e.overdue ? 'font-semibold text-warn' : 'text-ink2'}`}>
-                      {e.overdue ? `Просрочено · ${dateLabel(e.date)}` : e.date === today ? 'Сегодня' : dayLabel(e.date)}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="num text-[15px]">{fmtMoney(e.amount)}</span>
-                    <button type="button" onClick={() => pay(e)}
-                      className={`rounded-full px-3 py-1 text-[12px] font-bold active:scale-95 ${e.overdue ? 'bg-warn text-white' : 'bg-ink text-white'}`}>
-                      Оплатить
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          {data.bills.length + data.debts.length === 0 && (
-            <button type="button" className="btn w-full" onClick={() => go('payments')}>Добавить платежи</button>
-          )}
-        </Card>
-      )}
-      {data.bills.length + data.debts.length > 0 && overdue.length + soon.length === 0 && (
-        <Card delay={80} className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-okSoft text-ok"><IconCheck /></span>
-          <p className="flex-1 text-sm font-semibold">Все обязательные платежи до {p.byPayday ? 'зарплаты' : 'конца месяца'} оплачены</p>
-        </Card>
-      )}
-
-      {/* Траты */}
-      <Card delay={120} onClick={() => go('plan')}>
-        <Head right={<span className="text-sm font-semibold text-accent">План →</span>}>Траты за период</Head>
-        {spentTotal === 0 ? (
-          <p className="text-sm text-ink2">Пока ничего не потрачено. Нажмите «+», чтобы записать первую трату.</p>
-        ) : (
+      {/* Ближайшие списания */}
+      <Card delay={80}>
+        <Head right={<TextBtn onClick={() => go('payments')}>Все</TextBtn>}>Ближайшие списания</Head>
+        {data.bills.length + data.credits.length === 0 ? (
           <>
-            <div className="mb-3 flex h-3 gap-0.5 overflow-hidden rounded-full">
-              {groups.map((g) => <div key={g.id} style={{ width: `${(g.value / spentTotal) * 100}%`, background: g.color }} />)}
-            </div>
-            <ul className="space-y-1.5">
-              {groups.slice(0, 5).map((g) => (
-                <li key={g.id} className="flex items-center gap-2 text-sm">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: g.color }} />
-                  <span className="flex-1">{g.name}</span>
-                  <span className="text-ink3">{Math.round((g.value / spentTotal) * 100)}%</span>
-                  <span className="num w-24 text-right">{fmtMoney(g.value)}</span>
-                </li>
-              ))}
-            </ul>
+            <Empty icon="📌" title="Добавьте обязательные платежи">Квартира, связь, подписки, фитнес и кредиты: всё, что платите каждый месяц</Empty>
+            <button type="button" className="btn w-full" onClick={() => go('payments')}>Добавить</button>
           </>
-        )}
-        {hasIncome && (
-          <div className="mt-4 space-y-1.5 border-t border-line pt-3">
-            <div className="flex justify-between text-[13px]"><span className="text-ink2">На жизнь по плану</span><span className="font-semibold">{fmtMoney(life.actual)} из {fmtMoney(life.planned)}</span></div>
-            <Bar value={life.actual} max={life.planned} color="#16A34A" warn={life.left < 0} />
-          </div>
+        ) : (
+          <ul className="divide-y divide-line">
+            {charges(data, today, shiftDays(today, 40)).slice(0, 4).map((c) => (
+              <li key={c.key} className="flex items-center gap-3 py-2.5">
+                <CatIcon cat={catInfo(data.categories, c.category)} size={40} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{c.name}</p>
+                  <p className="text-[13px] text-ink2">{dayLabel(c.date)}</p>
+                </div>
+                <span className="num text-[15px]">−{fmtMoney(c.amount)}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
 
       {/* Последние записи */}
-      <Card delay={160}>
-        <Head right={ops.length > 0 && <TextBtn onClick={() => go('history')}>Вся история</TextBtn>}>Последние записи</Head>
+      <Card delay={120}>
+        <Head right={ops.length > 0 && <TextBtn onClick={() => go('months')}>По месяцам</TextBtn>}>Последние записи</Head>
         {ops.length === 0 ? (
           <Empty icon="🧾">Нажмите «+» внизу: сумма, категория, готово</Empty>
         ) : (
           <ul className="divide-y divide-line">
             {ops.map((o) => (
-              <OperationRow key={o.id} op={o} categories={data.categories} sub={dayLabel(o.date)}
-                onClick={() => open({ kind: 'edit', op: o })} />
+              <OperationRow key={o.id} op={o} categories={data.categories} sub={dayLabel(o.date)} onClick={() => open({ kind: 'edit', op: o })} />
             ))}
           </ul>
         )}
@@ -204,6 +183,13 @@ export default function Home({ go }: { go: (t: TabId) => void }) {
     </div>
   )
 }
+
+const Line = ({ label, value, tone }: { label: string; value: string; tone?: 'ok' }) => (
+  <div className="flex items-center justify-between gap-2">
+    <span className="text-[15px] text-ink2">{label}</span>
+    <span className={`num text-[16px] ${tone === 'ok' ? 'text-ok' : ''}`}>{value}</span>
+  </div>
+)
 
 function SyncPill({ status, onClick }: { status: SyncStatus; onClick: () => void }) {
   const map: Record<SyncStatus, { text: string; tone: 'ok' | 'soft' | 'warn' }> = {

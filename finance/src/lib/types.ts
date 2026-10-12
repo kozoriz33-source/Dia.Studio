@@ -12,8 +12,7 @@ export interface Income {
   source: string
   date: string // YYYY-MM-DD
   note: string
-  /** время создания, мс — для расчёта текущего остатка на счету */
-  ts?: number
+  ts: number // время создания, мс
 }
 
 export interface Expense {
@@ -22,50 +21,42 @@ export interface Expense {
   category: string
   date: string
   note: string
-  ts?: number
-  /** расход создан платежом по кредиту */
-  debtId?: string
-  /** расход создан отметкой регулярного платежа */
-  billId?: string
-  /** за какой месяц оплачен регулярный платёж (YYYY-MM), если не совпадает с датой */
-  billMonth?: string
+  ts: number
 }
 
-export interface DebtPayment {
-  date: string
-  amount: number
-  expenseId?: string
-}
-
-export interface Debt {
-  id: string
-  name: string
-  /** категория расхода, в которую попадают платежи */
-  category: string
-  total: number
-  remaining: number
-  monthlyPayment: number
-  nextPaymentDate: string
-  payments: DebtPayment[]
-}
-
-/** Регулярный ежемесячный платёж: подписка, связь, квартира, страховка… */
+/** Ежемесячный обязательный платёж — списывается сам в свой день */
 export interface Bill {
   id: string
   name: string
   category: string
   amount: number
-  day: number // день месяца 1–31
+  day: number // 1–31
+  /** с зарплаты какого числа платить; не задано — с последней зарплаты перед платежом */
+  fromDay?: number
 }
 
-/** category === null — общий лимит на месяц */
-export interface Limit {
+/** Кредит: платёж раз в месяц в свой день, пока не выплачен остаток */
+export interface Credit {
   id: string
-  category: string | null
+  name: string
+  category: string
+  monthly: number
+  day: number
+  /** остаток долга на дату asOf (после платежей до этой даты включительно) */
+  remaining: number
+  asOf: string
+  fromDay?: number
+}
+
+/** Поступление зарплаты: день месяца и сумма */
+export interface Payday {
+  id: string
+  name: string
+  day: number
   amount: number
 }
 
-/** Как делить свободный остаток (доход минус обязательные платежи), в процентах */
+/** Как делить то, что остаётся с зарплаты после обязательных платежей, % */
 export interface PlanShares {
   life: number
   savings: number
@@ -75,26 +66,21 @@ export interface PlanShares {
 
 export interface Settings {
   currency: string
+  paydays: Payday[]
   plan: PlanShares
-  /** день зарплаты (1–31) или null — тогда период = календарный месяц */
-  payday: number | null
-  /** ожидаемая зарплата */
-  salary: number
-  /** «сейчас на счету»: сумма и момент, когда её указали */
+  /** «сейчас на руках»: сумма и момент, когда её указали */
   balance: { amount: number; ts: number } | null
 }
 
 export interface AppData {
-  version: 3
-  /** мс последнего изменения — чтобы понять, какая копия свежее */
+  version: 4
   updatedAt: number
   incomes: Income[]
   expenses: Expense[]
-  debts: Debt[]
   bills: Bill[]
-  limits: Limit[]
+  credits: Credit[]
   categories: Category[]
   settings: Settings
 }
 
-export type TabId = 'home' | 'history' | 'payments' | 'plan' | 'settings'
+export type TabId = 'home' | 'months' | 'payments' | 'plan' | 'settings'

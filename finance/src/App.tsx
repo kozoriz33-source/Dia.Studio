@@ -2,7 +2,7 @@ import { useState } from 'react'
 import TabBar from './components/TabBar'
 import { OverlayHost, useUI } from './components/overlays'
 import Home from './pages/Home'
-import History from './pages/History'
+import Months from './pages/Months'
 import Payments from './pages/Payments'
 import Plan from './pages/Plan'
 import Settings from './pages/Settings'
@@ -26,7 +26,7 @@ function Shell() {
       {/* key — перезапускает анимацию появления при смене вкладки */}
       <main key={tab}>
         {tab === 'home' && <Home go={go} />}
-        {tab === 'history' && <History />}
+        {tab === 'months' && <Months />}
         {tab === 'payments' && <Payments />}
         {tab === 'plan' && <Plan />}
         {tab === 'settings' && <Settings back={() => go('home')} />}
