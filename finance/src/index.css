@@ -3,35 +3,36 @@
 @tailwind utilities;
 
 @layer base {
-  :root { color-scheme: dark; }
+  :root { color-scheme: light; }
   html, body, #root { min-height: 100%; }
   body {
-    @apply bg-bg font-sans text-white antialiased;
+    @apply bg-bg font-sans text-ink antialiased;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
-    background-image:
-      radial-gradient(60rem 30rem at 110% -10%, rgba(2, 210, 227, .10), transparent 60%),
-      radial-gradient(40rem 24rem at -20% 10%, rgba(167, 139, 250, .08), transparent 60%);
-    background-attachment: fixed;
   }
   input, select, textarea { font-size: 16px; } /* без авто-зума в iOS */
-  input[type='date'] { color-scheme: dark; }
-  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #02d2e3; outline-offset: 2px; }
+  button { -webkit-user-select: none; user-select: none; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid #2F5BFF; outline-offset: 2px;
+  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   }
 }
 
 @layer components {
-  .num { @apply font-display font-bold uppercase tracking-wide; font-variant-numeric: tabular-nums; }
-  .card { @apply rounded-3xl border border-white/[.06] bg-panel p-4 shadow-card; }
+  .num { @apply font-display font-semibold; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .card { @apply rounded-[22px] bg-card p-4 shadow-card; }
   .field {
-    @apply w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-white outline-none
-           placeholder:text-muted/50 focus:border-accent;
+    @apply w-full rounded-2xl border border-line bg-soft px-3.5 py-3 text-ink outline-none
+           placeholder:text-ink3 focus:border-accent focus:bg-white;
   }
   .btn {
-    @apply rounded-xl bg-accent px-4 py-3 font-semibold text-bg shadow-glow transition active:scale-95 disabled:opacity-40;
+    @apply rounded-2xl bg-ink px-4 py-3.5 font-semibold text-white transition active:scale-[.97] disabled:opacity-30;
   }
-  .btn-ghost { @apply rounded-xl bg-panel2 px-4 py-3 font-medium text-white transition active:scale-95; }
-  .chip { @apply rounded-full bg-panel2 px-3 py-1.5 text-sm text-white transition active:scale-95; }
+  .btn-accent { @apply rounded-2xl bg-accent px-4 py-3.5 font-semibold text-white transition active:scale-[.97] disabled:opacity-30; }
+  .btn-soft { @apply rounded-2xl bg-soft px-4 py-3.5 font-semibold text-ink transition active:scale-[.97] disabled:opacity-40; }
+  .chip { @apply rounded-full border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink transition active:scale-95; }
+  .chip-on { @apply border-ink bg-ink text-white; }
+  .label { @apply text-[12px] font-semibold uppercase tracking-[.08em] text-ink3; }
 }

@@ -1,55 +1,119 @@
-import type { AppData, Bill, Category, Debt, Expense, Income } from './types'
-import { currentMonth, dueDate, endOfMonth, monthOf, todayISO } from './format'
+import type { AppData, Bill, Category, Expense, Income } from './types'
+import {
+  addMonths, addMonthsYM, dateLabel, daysBetween, dueDate, endOfMonth, monthLabel, monthOf, shiftDays, todayISO,
+} from './format'
 import { GROUPS, GROUP_ORDER, catInfo } from './categories'
+
+export const sum = (items: { amount: number }[]) => items.reduce((s, i) => s + i.amount, 0)
 
 export const inMonth = <T extends { date: string }>(items: T[], ym: string) =>
   items.filter((i) => monthOf(i.date) === ym)
 
-export const sum = (items: { amount: number }[]) => items.reduce((s, i) => s + i.amount, 0)
+/* ---------- Период: от зарплаты до зарплаты ---------- */
 
-export const isOverdue = (d: Debt) => d.remaining > 0 && d.nextPaymentDate < todayISO()
+export interface Period { start: string; end: string; next: string; label: string; byPayday: boolean }
 
-export const billExpense = (data: AppData, b: Bill, ym: string) =>
-  data.expenses.find((e) => e.billId === b.id && monthOf(e.date) === ym)
+/** offset 0 — текущий период, 1 — следующий, -1 — прошлый */
+export function getPeriod(payday: number | null, offset = 0, today = todayISO()): Period {
+  const ym = monthOf(today)
+  if (!payday) {
+    const m = addMonthsYM(ym, offset)
+    return { start: `${m}-01`, end: endOfMonth(m), next: `${addMonthsYM(m, 1)}-01`, label: monthLabel(m), byPayday: false }
+  }
+  let baseYM = ym
+  if (dueDate(ym, payday) > today) baseYM = addMonthsYM(ym, -1)
+  const startYM = addMonthsYM(baseYM, offset)
+  const start = dueDate(startYM, payday)
+  const next = dueDate(addMonthsYM(startYM, 1), payday)
+  const end = shiftDays(next, -1)
+  return { start, end, next, label: `${dateLabel(start)} – ${dateLabel(end)}`, byPayday: true }
+}
 
-/** Платёж по кредиту, который ещё предстоит внести до конца месяца ym */
-export const debtDue = (d: Debt, ym: string) =>
-  d.remaining > 0 && d.nextPaymentDate <= endOfMonth(ym) ? Math.min(d.monthlyPayment, d.remaining) : 0
+export const inRange = <T extends { date: string }>(items: T[], from: string, to: string) =>
+  items.filter((i) => i.date >= from && i.date <= to)
 
-export interface Upcoming {
-  kind: 'bill' | 'debt'
+/* ---------- Календарь платежей ---------- */
+
+export interface PayEvent {
+  key: string
+  kind: 'bill' | 'debt' | 'salary'
   id: string
   name: string
   category: string
   amount: number
   date: string
+  /** расход, которым платёж уже оплачен */
+  paid?: Expense
   overdue: boolean
 }
 
-/** Неоплаченные регулярные платежи и кредиты текущего месяца (и просроченные) */
-export function upcoming(data: AppData): Upcoming[] {
-  const ym = currentMonth()
+export const billExpense = (data: AppData, b: Bill, ym: string) =>
+  data.expenses.find((e) => e.billId === b.id && (e.billMonth ?? monthOf(e.date)) === ym)
+
+/**
+ * Все обязательные платежи (и зарплата) в диапазоне дат.
+ * Неоплаченные просроченные попадают в список, даже если их дата раньше from.
+ */
+export function payEvents(data: AppData, from: string, to: string, withSalary = false): PayEvent[] {
   const today = todayISO()
-  const items: Upcoming[] = []
+  const out: PayEvent[] = []
+
   for (const b of data.bills) {
-    if (billExpense(data, b, ym)) continue
-    const date = dueDate(ym, b.day)
-    items.push({ kind: 'bill', id: b.id, name: b.name, category: b.category, amount: b.amount, date, overdue: date < today })
+    for (let ym = monthOf(from); ym <= monthOf(to); ym = addMonthsYM(ym, 1)) {
+      const date = dueDate(ym, b.day)
+      const paid = billExpense(data, b, ym)
+      const inside = date >= from && date <= to
+      const overdue = !paid && date < today
+      // просроченный неоплаченный этого месяца показываем, даже если он раньше диапазона
+      if (!inside && !(overdue && ym === monthOf(today) && from <= today)) continue
+      out.push({ key: `b-${b.id}-${ym}`, kind: 'bill', id: b.id, name: b.name, category: b.category, amount: paid?.amount ?? b.amount, date, paid, overdue })
+    }
   }
+
   for (const d of data.debts) {
-    const amount = debtDue(d, ym)
-    if (!amount) continue
-    items.push({ kind: 'debt', id: d.id, name: d.name, category: d.category, amount, date: d.nextPaymentDate, overdue: isOverdue(d) })
+    // уже внесённые платежи
+    for (const p of d.payments) {
+      if (p.date < from || p.date > to) continue
+      const paid = data.expenses.find((e) => e.id === p.expenseId)
+      out.push({ key: `dp-${d.id}-${p.expenseId ?? p.date}`, kind: 'debt', id: d.id, name: d.name, category: d.category, amount: p.amount, date: p.date, paid, overdue: false })
+    }
+    // будущие (и просроченные) платежи
+    let date = d.nextPaymentDate
+    let rem = d.remaining
+    let i = 0
+    while (rem > 0 && date <= to && i < 60) {
+      const overdue = date < today
+      if (date >= from || (overdue && from <= today)) {
+        out.push({ key: `d-${d.id}-${date}`, kind: 'debt', id: d.id, name: d.name, category: d.category, amount: Math.min(d.monthlyPayment, rem), date, overdue })
+      }
+      rem -= d.monthlyPayment
+      date = addMonths(date, 1)
+      i++
+    }
   }
-  return items.sort((a, b) => a.date.localeCompare(b.date))
+
+  const { payday, salary } = data.settings
+  if (withSalary && payday && salary > 0) {
+    for (let ym = monthOf(from); ym <= monthOf(to); ym = addMonthsYM(ym, 1)) {
+      const date = dueDate(ym, payday)
+      if (date < from || date > to || date < today) continue
+      if (data.incomes.some((x) => x.date === date)) continue
+      out.push({ key: `s-${ym}`, kind: 'salary', id: ym, name: 'Зарплата', category: '', amount: salary, date, overdue: false })
+    }
+  }
+
+  return out.sort((a, b) => a.date.localeCompare(b.date) || (a.kind === 'salary' ? -1 : 0))
 }
 
-export function monthSummary(data: AppData, ym = currentMonth()) {
-  const income = sum(inMonth(data.incomes, ym))
-  const spent = sum(inMonth(data.expenses, ym))
-  const toPay = ym === currentMonth() ? sum(upcoming(data)) : 0
-  return { income, spent, toPay, available: income - spent - toPay }
+/** Текущий остаток на счету, если пользователь его указывал */
+export function currentBalance(data: AppData): number | null {
+  const b = data.settings.balance
+  if (!b) return null
+  const after = (x: { ts?: number }) => (x.ts ?? 0) > b.ts
+  return b.amount + sum(data.incomes.filter(after)) - sum(data.expenses.filter(after))
 }
+
+/* ---------- Группировки ---------- */
 
 export function byCategory(expenses: Expense[]) {
   const map = new Map<string, number>()
@@ -68,6 +132,19 @@ export function byGroup(expenses: Expense[], categories: Category[]) {
     .sort((a, b) => b.value - a.value)
 }
 
+/** Категории, отсортированные по частоте использования (для быстрого ввода) */
+export function topCategories(data: AppData, n: number) {
+  const counts = new Map<string, number>()
+  for (const e of data.expenses.slice(0, 300)) {
+    if (e.billId || e.debtId) continue
+    counts.set(e.category, (counts.get(e.category) ?? 0) + 1)
+  }
+  const fallback = ['Продукты', 'Кафе и рестораны', 'Топливо', 'Транспорт', 'Аптека и врачи', 'Развлечения', 'Одежда', 'Прочее']
+  const names = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c)
+  for (const f of fallback) if (!names.includes(f)) names.push(f)
+  return names.filter((c) => data.categories.some((x) => x.name === c)).slice(0, n)
+}
+
 export const monthsOf = (items: { date: string }[], always: string) =>
   [...new Set([always, ...items.map((i) => monthOf(i.date))])].sort().reverse()
 
@@ -79,4 +156,6 @@ export const allOperations = (data: AppData): Operation[] =>
   [
     ...data.incomes.map((i) => ({ kind: 'income' as const, ...i })),
     ...data.expenses.map((e) => ({ kind: 'expense' as const, ...e })),
-  ].sort((a, b) => b.date.localeCompare(a.date))
+  ].sort((a, b) => b.date.localeCompare(a.date) || (b.ts ?? 0) - (a.ts ?? 0))
+
+export { daysBetween }

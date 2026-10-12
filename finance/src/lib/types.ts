@@ -1,4 +1,4 @@
-export type GroupId = 'credit' | 'subs' | 'telecom' | 'home' | 'car' | 'daily' | 'savings' | 'other'
+export type GroupId = 'credit' | 'subs' | 'telecom' | 'home' | 'car' | 'sport' | 'daily' | 'savings' | 'other'
 
 export interface Category {
   name: string
@@ -12,6 +12,8 @@ export interface Income {
   source: string
   date: string // YYYY-MM-DD
   note: string
+  /** время создания, мс — для расчёта текущего остатка на счету */
+  ts?: number
 }
 
 export interface Expense {
@@ -20,10 +22,13 @@ export interface Expense {
   category: string
   date: string
   note: string
+  ts?: number
   /** расход создан платежом по кредиту */
   debtId?: string
   /** расход создан отметкой регулярного платежа */
   billId?: string
+  /** за какой месяц оплачен регулярный платёж (YYYY-MM), если не совпадает с датой */
+  billMonth?: string
 }
 
 export interface DebtPayment {
@@ -71,10 +76,18 @@ export interface PlanShares {
 export interface Settings {
   currency: string
   plan: PlanShares
+  /** день зарплаты (1–31) или null — тогда период = календарный месяц */
+  payday: number | null
+  /** ожидаемая зарплата */
+  salary: number
+  /** «сейчас на счету»: сумма и момент, когда её указали */
+  balance: { amount: number; ts: number } | null
 }
 
 export interface AppData {
-  version: 2
+  version: 3
+  /** мс последнего изменения — чтобы понять, какая копия свежее */
+  updatedAt: number
   incomes: Income[]
   expenses: Expense[]
   debts: Debt[]
@@ -84,4 +97,4 @@ export interface AppData {
   settings: Settings
 }
 
-export type TabId = 'dashboard' | 'operations' | 'bills' | 'debts' | 'plan' | 'settings'
+export type TabId = 'home' | 'history' | 'payments' | 'plan' | 'settings'

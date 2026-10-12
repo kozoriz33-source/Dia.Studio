@@ -76,3 +76,18 @@ export const addMonths = (iso: string, n: number) => {
 
 export const uid = () =>
   (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`)
+
+/** Сдвиг месяца 'YYYY-MM' на n */
+export const addMonthsYM = (ym: string, n: number) => addMonths(`${ym}-01`, n).slice(0, 7)
+
+/** Количество дней от a до b включительно */
+export const daysBetween = (a: string, b: string) => {
+  const [y1, m1, d1] = a.split('-').map(Number)
+  const [y2, m2, d2] = b.split('-').map(Number)
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000) + 1
+}
+
+export const weekdayShort = (iso: string) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('ru-RU', { weekday: 'short' })
+}
