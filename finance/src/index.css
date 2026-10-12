@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { min-height: 100%; }
+  body {
+    @apply bg-bg font-sans text-white antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  input, select, textarea { font-size: 16px; } /* без авто-зума в iOS */
+  input[type='date'] { color-scheme: dark; }
+}
+
+@layer components {
+  .num { @apply font-display font-bold uppercase tracking-wide; }
+  .card { @apply rounded-2xl bg-panel p-4 shadow-card; }
+  .field {
+    @apply w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 text-white outline-none
+           placeholder:text-muted/50 focus:border-accent;
+  }
+  .btn {
+    @apply rounded-xl bg-accent px-4 py-2.5 font-semibold text-bg transition active:scale-95;
+  }
+  .btn-ghost { @apply rounded-xl bg-panel2 px-4 py-2.5 font-medium text-muted transition active:scale-95; }
+}
