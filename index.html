@@ -206,13 +206,20 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
   .master .frame{margin-inline:auto}
   .cards{grid-template-columns:repeat(2,1fr)}
   .hero{min-height:auto;align-items:flex-end}
-  .hero-img{inset:72px 0 auto 0;width:100%;height:min(480px,108vw);-webkit-mask-image:linear-gradient(180deg,#000 72%,transparent);mask-image:linear-gradient(180deg,#000 72%,transparent)}
-  .hero-img video{object-position:72% 60%}
+  .hero-img{inset:72px 0 auto 0;width:100%;height:min(520px,80vw);-webkit-mask-image:linear-gradient(180deg,#000 82%,transparent);mask-image:linear-gradient(180deg,#000 82%,transparent)}
+  .hero-img video{object-position:32% 55%}
   .reel{height:220vh}
-  .reel-sticky::before{background:linear-gradient(180deg,var(--bg) 0,rgba(236,217,211,0) 14%),linear-gradient(0deg,var(--bg) 0,rgba(236,217,211,.85) 32%,rgba(236,217,211,0) 58%)}
-  .hero::before{background:linear-gradient(180deg,transparent min(280px,58vw),rgba(236,217,211,.7) min(500px,112vw))}
+  /* телефон: відео зверху, текст під ним — нічого не перекриває флакон */
+  .reel-sticky{flex-direction:column;align-items:stretch;justify-content:flex-start;padding-top:72px}
+  .reel canvas{position:relative;inset:auto;flex:none;height:min(56svh,120vw);z-index:0;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 8%,#000 86%,transparent);mask-image:linear-gradient(180deg,transparent 0,#000 8%,#000 86%,transparent)}
+  .reel-sticky::before{display:none}
+  .reel-sticky{background:rgba(236,217,211,.8)}
+  .reel-text{padding:12px 0 0}
+  .reel-text h2{margin:.2rem 0 .6rem}
+  .hero::before{display:none}
+  .hero{background:rgba(236,217,211,.8)}
   .hero .note{top:92px;right:5%}
-  .hero-inner{padding:min(440px,98vw) 0 60px}
+  .hero-inner{padding:calc(72px + min(520px,80vw) + 16px) 0 60px}
   .hero .lead{max-width:none}
 }
 @media(max-width:560px){
