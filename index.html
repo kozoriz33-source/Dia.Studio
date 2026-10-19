@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dia.Studio — студія манікюру</title>
-<meta name="description" content="Dia.Studio — студія манікюру: гель-покриття, cat-eye, нейл-арт. Запис у WhatsApp, Telegram та Instagram.">
-<meta property="og:title" content="Dia.Studio — студія манікюру">
-<meta property="og:description" content="Нігті, що надихають. Запишіться на манікюр у Dia.Studio.">
+<title>ivanova_nails.studio — студія манікюру</title>
+<meta name="description" content="ivanova_nails.studio — студія манікюру: гель-покриття, cat-eye, нейл-арт. Запис у WhatsApp, Telegram та Instagram.">
+<meta property="og:title" content="ivanova_nails.studio — студія манікюру">
+<meta property="og:description" content="Нігті, що надихають. Запишіться на манікюр у ivanova_nails.studio.">
 <meta property="og:image" content="img/hero.webp">
 <meta name="theme-color" content="#fbf3f1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23fbf3f1'/%3E%3Cpath d='M22 12h20l10 12-20 30L12 24z' fill='%23d98a8f'/%3E%3Cpath d='M22 12h20l10 12H12z' fill='%23f0b9ae'/%3E%3C/svg%3E">
@@ -63,7 +63,7 @@ header.solid{background:rgba(236,217,211,.9);backdrop-filter:blur(14px);-webkit-
 .logo{display:flex;align-items:center;gap:.7rem;color:var(--ink)}
 .logo svg{width:38px;height:38px;filter:drop-shadow(0 4px 8px rgba(180,96,109,.35));transition:transform .6s var(--spring)}
 @media(hover:hover){.logo:hover svg{transform:rotate(-8deg) scale(1.12)}}
-.logo b{font-family:var(--display);font-weight:700;font-size:1.7rem;letter-spacing:-.01em}
+.logo b{font-family:var(--display);font-weight:700;font-size:clamp(1.3rem,1.9vw,1.7rem);letter-spacing:-.01em;white-space:nowrap}
 .nav-r{justify-self:end}
 .burger{display:none;background:none;border:0;color:var(--ink);width:44px;height:44px;cursor:pointer;justify-self:start}
 .burger svg{width:26px;height:26px}
@@ -208,6 +208,7 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
 @keyframes zoom{from{transform:scale(1.08)}to{transform:none}}
 @media(prefers-reduced-motion:reduce){html:not(.motion-on) *{animation:none!important;scroll-behavior:auto!important}}
 
+@media(max-width:1200px){.menu{gap:1.3rem}}
 @media(max-width:980px){
   header{background:rgba(236,217,211,.95);box-shadow:0 1px 0 var(--line)}
   html{scroll-padding-top:72px}
@@ -219,7 +220,9 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
   .menu,.nav-r{display:none}
   .burger{display:grid;place-items:center}
   .nav::after{content:"";width:44px}
-  .logo b{font-size:1.45rem}.logo svg{width:32px;height:32px}
+  .wrap.nav{width:calc(100% - 32px)}
+  .logo{gap:.5rem}
+  .logo b{font-size:clamp(.92rem,4.6vw,1.45rem)}.logo svg{width:28px;height:28px}
   .mobile-menu{position:fixed;inset:72px 0 auto 0;z-index:49;background:rgba(236,217,211,.99);border-bottom:1px solid var(--line);padding:14px 20px 24px;flex-direction:column}
   .mobile-menu.open{display:flex}
   .mobile-menu a:not(.glass){padding:.9rem 0;font-size:1.05rem;font-weight:500;border-bottom:1px solid var(--line)}
@@ -265,7 +268,7 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
     <nav class="menu" aria-label="Головне меню">
       <a href="#about">Про нас</a><a href="#services">Послуги</a><a href="#master">Майстер</a><a href="#gallery">Роботи</a>
     </nav>
-    <a href="#top" class="logo" aria-label="Dia.Studio — на початок">
+    <a href="#top" class="logo" aria-label="ivanova_nails.studio — на початок">
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <defs>
           <linearGradient id="gA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe0d8"/><stop offset="1" stop-color="#e79e9a"/></linearGradient>
@@ -279,7 +282,7 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
         <polygon points="42,9 32,23 54,23" fill="#fff" opacity=".12"/>
         <path d="M22 9l10 14 10-14M10 23l22 34 22-34" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.2" stroke-linejoin="round"/>
       </svg>
-      <b>Dia.Studio</b>
+      <b>ivanova_nails.studio</b>
     </a>
     <div class="nav-r"><a class="glass sm" href="#book"><span>Записатись</span></a></div>
   </div>
@@ -324,14 +327,14 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
   <div class="wrap split">
     <div>
       <h2>Краса, турбота, впевненість</h2>
-      <p>У Dia.Studio кожна деталь має значення. Ми дбаємо про ваші нігті в спокійній атмосфері: працюємо з перевіреними гель-лаками, стерилізуємо інструменти й підбираємо форму та дизайн саме під вас.</p>
+      <p>У ivanova_nails.studio кожна деталь має значення. Ми дбаємо про ваші нігті в спокійній атмосфері: працюємо з перевіреними гель-лаками, стерилізуємо інструменти й підбираємо форму та дизайн саме під вас.</p>
       <span class="hand">Побалуйте себе ♡</span>
       <div class="facts">
         <div><b>cat-eye</b>наш фірмовий дизайн</div>
         <div><b>3D-декор</b>бантики та прикраси</div>
       </div>
     </div>
-    <div class="frame"><img src="img/studio.webp" alt="Полиці з гель-лаками та золотий діамант на стіні студії Dia.Studio" loading="lazy"></div>
+    <div class="frame"><img src="img/studio.webp" alt="Полиці з гель-лаками та золотий діамант на стіні студії ivanova_nails.studio" loading="lazy"></div>
   </div>
 </section>
 
@@ -364,7 +367,7 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
 
 <section class="master" id="master">
   <div class="wrap split">
-    <div class="frame"><img src="img/master.webp" alt="Майстер Dia.Studio у студії" loading="lazy"></div>
+    <div class="frame"><img src="img/master.webp" alt="Майстер ivanova_nails.studio у студії" loading="lazy"></div>
     <div>
       <h2>Майстер, який чує вас <span class="hand">і робить саме так</span></h2>
       <p>Кожен манікюр починається з розмови: яка форма, який настрій, який колір вам до душі. Ми працюємо уважно й без поспіху, щоб результат тішив вас щодня.</p>
@@ -413,8 +416,8 @@ footer{padding:30px 0;background:var(--deep);color:var(--muted);font-size:.9rem;
 
 <footer>
   <div class="wrap foot">
-    <span class="logo"><svg viewBox="0 0 64 64" aria-hidden="true"><polygon points="22,9 42,9 54,23 10,23" fill="#f0b9ae"/><polygon points="10,23 32,23 32,57" fill="#d98a8f"/><polygon points="54,23 32,23 32,57" fill="#b4606d"/></svg><b>Dia.Studio</b></span>
-    <span>© <span id="yr">2026</span> Dia.Studio · Студія манікюру</span>
+    <span class="logo"><svg viewBox="0 0 64 64" aria-hidden="true"><polygon points="22,9 42,9 54,23 10,23" fill="#f0b9ae"/><polygon points="10,23 32,23 32,57" fill="#d98a8f"/><polygon points="54,23 32,23 32,57" fill="#b4606d"/></svg><b>ivanova_nails.studio</b></span>
+    <span>© <span id="yr">2026</span> ivanova_nails.studio · Студія манікюру</span>
   </div>
 </footer>
 
