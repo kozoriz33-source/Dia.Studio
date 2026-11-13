@@ -58,7 +58,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(17,17,17,.94);backdrop-f
 @media (max-width:420px){.nav .btn span{display:none}.nav .btn{padding:.6rem .75rem}}
 
 /* ===== Hero ===== */
-.hero{background:radial-gradient(circle at 75% 45%,#3a1a12 0,var(--black) 55%);color:#fff;position:relative;overflow:hidden}
+.hero{background:linear-gradient(90deg,rgba(10,10,10,.95) 0,rgba(10,10,10,.82) 45%,rgba(10,10,10,.45)),url("img/hero-bg.jpg") center/cover var(--black);color:#fff;position:relative;overflow:hidden}
 .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:2rem;padding:4.5rem 0 5rem}
 .status{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem .9rem;border-radius:999px;background:rgba(255,255,255,.08);font-size:.85rem;font-weight:600;margin-bottom:1.4rem}
 .dot{width:9px;height:9px;border-radius:50%;background:#888}
@@ -76,7 +76,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(17,17,17,.94);backdrop-f
 .phones a:hover{color:var(--gold)}
 .phones svg{width:20px;height:20px;color:var(--red)}
 .pizza-stage{position:relative;aspect-ratio:1;max-width:460px;width:100%;justify-self:center}
-.pizza-stage .spin{width:100%;height:100%;animation:spin 60s linear infinite;filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}
+.pizza-stage .spin{width:100%;height:100%;border-radius:50%;object-fit:cover;animation:spin 80s linear infinite;box-shadow:0 30px 60px rgba(0,0,0,.7),0 0 0 10px rgba(255,255,255,.06)}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.pizza-stage .spin{animation:none}html{scroll-behavior:auto}}
 .badge{position:absolute;top:2%;right:0;width:118px;height:118px;border-radius:50%;background:var(--red);display:grid;place-content:center;text-align:center;font-family:var(--display);text-transform:uppercase;line-height:1.05;transform:rotate(12deg);box-shadow:0 10px 25px rgba(0,0,0,.4);border:3px dashed rgba(255,255,255,.5)}
@@ -104,7 +104,10 @@ section{padding:4.5rem 0}
 .offer.o1 h3{color:var(--red)}
 .offer.o1 .big{font-size:1.2rem;font-weight:600;margin:.4rem 0}
 .offer.o1 .big span{color:var(--red)}
-.offer.o2{background:var(--black);color:#fff}
+.offer.o2{background:linear-gradient(90deg,rgba(12,12,12,.94) 0,rgba(12,12,12,.85) 55%,rgba(12,12,12,.35)),url("img/party.jpg") right center/cover var(--black);color:#fff}
+.offer.o1{display:grid;grid-template-columns:1fr 42%;gap:1.4rem;align-items:center}
+.offer.o1 .pic{width:100%;height:100%;min-height:240px;object-fit:cover;border-radius:14px}
+@media (max-width:480px){.offer.o1{grid-template-columns:1fr}.offer.o1 .pic{min-height:180px;order:-1}}
 .offer.o2 h3{font-family:var(--script);text-transform:none;font-weight:400;font-size:3rem;color:#ff4a57;line-height:1;margin-bottom:.2rem}
 .offer.o2 .size{font-family:var(--display);font-size:1.3rem;letter-spacing:.05em;border-bottom:2px solid #fff;display:inline-block;margin-bottom:1rem}
 .offer.o2 .row{display:flex;justify-content:space-between;gap:1rem;font-size:1.1rem;padding:.35rem 0;border-bottom:1px dashed rgba(255,255,255,.2)}
@@ -126,13 +129,17 @@ section{padding:4.5rem 0}
 .cat-title p{color:var(--green);font-weight:600;font-size:.92rem}
 .items{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
 @media (max-width:760px){.items{grid-template-columns:1fr}}
-.item{display:flex;flex-direction:column;gap:.75rem;padding:1.1rem 1.2rem;border-radius:14px;background:var(--cream);border:1px solid var(--line)}
-.item .top{display:flex;gap:.85rem}
-.num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--black);color:#fff;font-family:var(--display);font-weight:600;display:grid;place-items:center;font-size:.95rem}
+.item{display:flex;gap:1rem;align-items:flex-start;padding:.9rem;border-radius:14px;background:var(--cream);border:1px solid var(--line)}
+.item .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:.7rem}
+.item .top{display:flex;gap:.7rem}
+.thumb{flex:none;width:118px;height:118px;border-radius:12px;object-fit:cover;background:#eee}
+.item:hover .thumb{transform:scale(1.03)}.thumb{transition:transform .3s}
+@media (max-width:480px){.item{gap:.75rem;padding:.75rem}.thumb{width:76px;height:76px;border-radius:10px}.prices{gap:.35rem}.add{font-size:.82rem;padding:.35rem .35rem .35rem .65rem;gap:.35rem}.add .plus{width:22px;height:22px}.item h4{font-size:1rem}.item .desc{font-size:.86rem}}
+.num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--black);color:#fff;font-family:var(--display);font-weight:600;display:grid;place-items:center;font-size:.95rem}
 .item h4{font-size:1.08rem;font-weight:700;line-height:1.3}
 .item h4 .tag{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--red);padding:.12rem .45rem;border-radius:5px;margin-left:.35rem;vertical-align:2px}
 .item .desc{color:var(--muted);font-size:.92rem;margin-top:.15rem}
-.prices{display:flex;flex-wrap:wrap;gap:.5rem;margin-left:calc(34px + .85rem)}
+.prices{display:flex;flex-wrap:wrap;gap:.5rem}
 .add{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .5rem .45rem .85rem;border-radius:999px;background:#fff;border:1.5px solid var(--line);font-size:.9rem;font-weight:600;transition:border-color .2s,transform .15s}
 .add:hover{border-color:var(--red)}
 .add:active{transform:scale(.96)}
@@ -140,6 +147,15 @@ section{padding:4.5rem 0}
 .add .plus{width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;font-size:1.05rem;line-height:1}
 .add.flash{border-color:var(--green);background:#eaf7ee}
 .note{font-size:.85rem;color:var(--muted);margin-top:1rem}
+
+/* Gallery */
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:220px;gap:.8rem}
+.gallery figure{border-radius:16px;overflow:hidden;position:relative}
+.gallery img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.gallery figure:hover img{transform:scale(1.06)}
+.gallery .w2{grid-column:span 2}.gallery .h2{grid-row:span 2}
+.gallery figcaption{position:absolute;left:0;right:0;bottom:0;padding:1.6rem .9rem .7rem;color:#fff;font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+@media (max-width:760px){.gallery{grid-template-columns:1fr 1fr;grid-auto-rows:150px}.gallery .w2{grid-column:span 2}}
 
 /* Info */
 .info{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem}
@@ -222,6 +238,7 @@ footer .copy{border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;displa
     <nav class="links" aria-label="Hauptnavigation">
       <a href="#angebote">Angebote</a>
       <a href="#speisekarte">Speisekarte</a>
+      <a href="#galerie">Galerie</a>
       <a href="#zeiten">Zeiten & Lieferung</a>
       <a href="#kontakt">Kontakt</a>
     </nav>
@@ -248,29 +265,7 @@ footer .copy{border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;displa
       </div>
     </div>
     <div class="pizza-stage" aria-hidden="true">
-      <svg class="spin" viewBox="0 0 400 400">
-        <defs>
-          <radialGradient id="crust" cx="50%" cy="50%" r="50%"><stop offset="86%" stop-color="#e9b25f"/><stop offset="100%" stop-color="#a8642a"/></radialGradient>
-          <radialGradient id="cheese" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#ffe9a3"/><stop offset="1" stop-color="#f3c45c"/></radialGradient>
-          <radialGradient id="pep" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#e2453f"/><stop offset="1" stop-color="#9e1c1c"/></radialGradient>
-        </defs>
-        <circle cx="200" cy="200" r="190" fill="#2b1a10"/>
-        <circle cx="200" cy="200" r="178" fill="url(#crust)"/>
-        <circle cx="200" cy="200" r="156" fill="#c4361f"/>
-        <path d="M200 52c40 2 70 14 98 42s48 64 47 104c-2 44-20 76-46 102s-62 47-100 46c-42-1-76-18-102-44S50 238 52 198c2-40 18-72 44-98s64-49 104-48z" fill="url(#cheese)"/>
-        <g fill="#fff3c8" opacity=".55"><ellipse cx="150" cy="120" rx="22" ry="10"/><ellipse cx="260" cy="250" rx="26" ry="11"/><ellipse cx="120" cy="250" rx="18" ry="9"/><ellipse cx="270" cy="140" rx="16" ry="8"/></g>
-        <g fill="url(#pep)">
-          <circle cx="140" cy="150" r="24"/><circle cx="245" cy="110" r="22"/><circle cx="290" cy="200" r="24"/><circle cx="210" cy="190" r="22"/><circle cx="130" cy="240" r="23"/><circle cx="215" cy="285" r="24"/><circle cx="295" cy="285" r="18"/><circle cx="175" cy="95" r="16"/>
-        </g>
-        <g fill="#7a1010" opacity=".5"><circle cx="135" cy="146" r="3"/><circle cx="148" cy="158" r="2.5"/><circle cx="242" cy="105" r="3"/><circle cx="286" cy="206" r="3"/><circle cx="214" cy="186" r="2.5"/><circle cx="210" cy="291" r="3"/></g>
-        <g fill="#1d1d1d"><circle cx="185" cy="140" r="9"/><circle cx="255" cy="235" r="9"/><circle cx="165" cy="300" r="8"/><circle cx="105" cy="195" r="8"/></g>
-        <g fill="#f3c45c"><circle cx="185" cy="140" r="3.5"/><circle cx="255" cy="235" r="3.5"/><circle cx="165" cy="300" r="3"/><circle cx="105" cy="195" r="3"/></g>
-        <g fill="#178a3e">
-          <path d="M175 225c10-20 35-22 45-10-12 18-34 22-45 10z"/><path d="M260 165c6-20 30-28 42-18-8 20-30 28-42 18z"/><path d="M95 120c15-14 38-8 42 6-16 12-38 8-42-6z"/><path d="M240 320c14-14 38-10 42 4-15 13-37 10-42-4z"/>
-        </g>
-        <g fill="#e03a2d"><circle cx="330" cy="240" r="10"/><circle cx="160" cy="190" r="10"/><circle cx="90" cy="285" r="9"/></g>
-        <g stroke="#7a3a14" stroke-width="2.5" opacity=".35"><line x1="200" y1="22" x2="200" y2="378"/><line x1="22" y1="200" x2="378" y2="200"/><line x1="74" y1="74" x2="326" y2="326"/><line x1="326" y1="74" x2="74" y2="326"/></g>
-      </svg>
+      <img class="spin" src="img/hero-pizza.jpg" alt="" width="900" height="900">
       <div class="badge"><div><small>Neueröffnung</small><strong>13.11.</strong><small>2026</small></div></div>
     </div>
   </div>
@@ -282,11 +277,12 @@ footer .copy{border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;displa
     <div class="sec-head"><div class="s">Unsere Angebote</div><p>Zur Neueröffnung – gültig bis 31.12.2026</p></div>
     <div class="offers">
       <article class="offer o1">
-        <h3>Neueröffnungsangebot</h3>
+        <div><h3>Neueröffnungsangebot</h3>
         <p class="big">Zu jeder Pizza <span>(30 cm)</span> erhalten Sie einen Softdrink <span>(0,33 l)</span> gratis dazu!</p>
         <p>Cola, Fanta oder Mezzo Mix – einfach bei der Bestellung dazusagen.</p>
         <p class="small">Gültig bis 31.12.2026.</p>
-        <a class="btn btn-red" href="#cat-classic">Pizza wählen</a>
+        <a class="btn btn-red" href="#cat-classic">Pizza wählen</a></div>
+        <img class="pic" src="img/g-pizza.jpg" alt="Frisch gebackene Pizza" loading="lazy">
       </article>
       <article class="offer o2">
         <h3>Partypizza</h3>
@@ -295,7 +291,6 @@ footer .copy{border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;displa
         <div class="row"><span>Extra Beilage jeweils</span><b>4,00 €</b></div>
         <p class="small">Inkl. 1 l Softdrink gratis! (bis 31.12.2026)</p>
         <button class="btn btn-red" data-add="party" data-size="0">In den Warenkorb</button>
-        <svg class="deco" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#fff"/></svg>
       </article>
     </div>
   </div>
@@ -305,6 +300,19 @@ footer .copy{border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;displa
   <div class="sec-head wrap"><div class="s">Speisekarte</div><p>Preise in Euro · Allergene und Zusatzstoffe siehe Fußzeile</p></div>
   <div class="tabs" role="tablist" aria-label="Kategorien"><div class="wrap" id="tabs"></div></div>
   <div class="wrap" id="menu"></div>
+</section>
+
+<section id="galerie">
+  <div class="wrap">
+    <div class="sec-head"><div class="s">Frisch aus dem Ofen</div><p>Täglich frisch belegt – mit Mozzarella und hausgemachter Tomatensoße</p></div>
+    <div class="gallery">
+      <figure class="w2 h2"><img src="img/g-cheese.jpg" alt="Pizza mit Käsefäden" loading="lazy"><figcaption>Mit viel Mozzarella</figcaption></figure>
+      <figure><img src="img/g-slices.jpg" alt="Pizzastücke mit Tomaten und Basilikum" loading="lazy"><figcaption>Pizza Classic</figcaption></figure>
+      <figure><img src="img/g-pasta.jpg" alt="Tagliatelle mit Fleisch" loading="lazy"><figcaption>Pasta</figcaption></figure>
+      <figure><img src="img/g-board.jpg" alt="Pizza auf Holzbrett" loading="lazy"><figcaption>Pizza Spezial</figcaption></figure>
+      <figure><img src="img/g-shrimp.jpg" alt="Spaghetti in der Pfanne" loading="lazy"><figcaption>Nudelgerichte</figcaption></figure>
+    </div>
+  </div>
 </section>
 
 <section id="zeiten">
@@ -355,7 +363,7 @@ footer .copy{border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;displa
       <div><h4>Allergene</h4>a) Weizen<br>c) Eier<br>d) Fische<br>g) Milch (Laktose)</div>
       <div><h4>Hinweise</h4>Alle Pizzen mit Mozzarella und Tomatensoße. Softdrinks inkl. Pfand. Mindestbestellwert 25 €.</div>
     </div>
-    <div class="copy"><span>© 2026 Die Pizza Ecke · Steinbergstraße 107 · 31137 Hildesheim</span><span><a href="#">Impressum</a> · <a href="#">Datenschutz</a></span></div>
+    <div class="copy"><span>© 2026 Die Pizza Ecke · Steinbergstraße 107 · 31137 Hildesheim</span><span>Fotos: Unsplash (Symbolbilder) · <a href="#">Impressum</a> · <a href="#">Datenschutz</a></span></div>
   </div>
 </footer>
 
@@ -386,35 +394,35 @@ footer .copy{border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;displa
 /* ======== DATEN (vom Flyer) ======== */
 const MENU = [
   {id:'classic', title:'Pizza Classic', sub:'Alle Pizzen mit Mozzarella und Tomatensoße', sizes:['24 cm','30 cm'], items:[
-    {n:1, name:'Margherita', al:'a,g', p:[7.00,9.00]},
-    {n:2, name:'Salami', al:'2,3,a,g', p:[8.00,10.50]},
-    {n:3, name:'Schinken', al:'2,3,15,a,g', p:[8.00,10.50]},
-    {n:4, name:'Tonno', al:'a,d,g', d:'Thunfisch, Zwiebeln', p:[9.50,12.00]},
-    {n:5, name:'Vegetaria', al:'a,g', d:'mit Brokkoli, Champignons, Paprika, Zwiebeln', p:[9.50,12.50]},
-    {n:6, name:'Hawaii', al:'2,3,15,a,g', d:'Schinken und Ananas', p:[9.50,12.00]},
-    {n:7, name:'Quattro Stagioni', al:'2,3,15,a,g', d:'mit Salami, Schinken, Champignons, Paprika', p:[11.50,14.00]},
-    {n:8, name:'Piccante Pizza', tag:'scharf', al:'2,3,a,g', d:'mit Salami, Cherrytomaten, Jalapeños', p:[11.00,14.00]},
-    {n:9, name:'Caprese', al:'a,g', d:'mit frischen Tomaten und Mozzarella', p:[8.00,10.00]},
-    {n:10, name:'Pizzabrötchen (10 Stück)', al:'a,g', d:'mit Kräuterbutter', p:[6.00], one:true},
-    {n:11, name:'Gefüllte Pizzabrötchen (10 Stück)', al:'a,g', d:'mit einer Zutat nach Wahl', p:[8.00], one:true},
+    {n:1, name:'Margherita', img:'margherita', al:'a,g', p:[7.00,9.00]},
+    {n:2, name:'Salami', img:'salami', al:'2,3,a,g', p:[8.00,10.50]},
+    {n:3, name:'Schinken', img:'schinken', al:'2,3,15,a,g', p:[8.00,10.50]},
+    {n:4, name:'Tonno', img:'tonno', al:'a,d,g', d:'Thunfisch, Zwiebeln', p:[9.50,12.00]},
+    {n:5, name:'Vegetaria', img:'vegetaria', al:'a,g', d:'mit Brokkoli, Champignons, Paprika, Zwiebeln', p:[9.50,12.50]},
+    {n:6, name:'Hawaii', img:'hawaii', al:'2,3,15,a,g', d:'Schinken und Ananas', p:[9.50,12.00]},
+    {n:7, name:'Quattro Stagioni', img:'quattro', al:'2,3,15,a,g', d:'mit Salami, Schinken, Champignons, Paprika', p:[11.50,14.00]},
+    {n:8, name:'Piccante Pizza', img:'piccante', tag:'scharf', al:'2,3,a,g', d:'mit Salami, Cherrytomaten, Jalapeños', p:[11.00,14.00]},
+    {n:9, name:'Caprese', img:'caprese', al:'a,g', d:'mit frischen Tomaten und Mozzarella', p:[8.00,10.00]},
+    {n:10, name:'Pizzabrötchen (10 Stück)', img:'broetchen', al:'a,g', d:'mit Kräuterbutter', p:[6.00], one:true},
+    {n:11, name:'Gefüllte Pizzabrötchen (10 Stück)', img:'gefuellt', al:'a,g', d:'mit einer Zutat nach Wahl', p:[8.00], one:true},
   ]},
   {id:'spezial', title:'Pizza Spezial', sub:'Unsere Spezialitäten', sizes:['24 cm','30 cm'], items:[
-    {n:20, name:'Insel Pizza', al:'a,c,g', d:'mit Sauce Hollandaise, Hähnchenbrust, Brokkoli', p:[11.00,14.00]},
-    {n:21, name:'Jimmy’s Pizza', al:'a,c,g', d:'Sauce Hollandaise, Hähnchenbrust, Ananas, Jalapeños', p:[11.00,14.00]},
-    {n:22, name:'Pizza Sicilien', al:'a,d,g', d:'mit Sardellen, Kapern, Oliven und Cherrytomaten', p:[11.50,14.00]},
-    {n:23, name:'Chicken Tikka', al:'a,g', d:'mit Hähnchenfleisch, Zwiebeln, Oliven und Curry', p:[13.00,15.00]},
-    {n:24, name:'Calzone', al:'2,3,15,a,g', d:'mit Salami, Schinken, Champignons', p:[null,13.00]},
+    {n:20, name:'Insel Pizza', img:'insel', al:'a,c,g', d:'mit Sauce Hollandaise, Hähnchenbrust, Brokkoli', p:[11.00,14.00]},
+    {n:21, name:'Jimmy’s Pizza', img:'jimmy', al:'a,c,g', d:'Sauce Hollandaise, Hähnchenbrust, Ananas, Jalapeños', p:[11.00,14.00]},
+    {n:22, name:'Pizza Sicilien', img:'sicilien', al:'a,d,g', d:'mit Sardellen, Kapern, Oliven und Cherrytomaten', p:[11.50,14.00]},
+    {n:23, name:'Chicken Tikka', img:'tikka', al:'a,g', d:'mit Hähnchenfleisch, Zwiebeln, Oliven und Curry', p:[13.00,15.00]},
+    {n:24, name:'Calzone', img:'calzone', al:'2,3,15,a,g', d:'mit Salami, Schinken, Champignons', p:[null,13.00]},
   ]},
   {id:'party', title:'Partypizza 50 × 50', sub:'Inkl. 1 l Softdrink gratis! (bis 31.12.2026)', sizes:['50 × 50'], items:[
-    {n:'P', key:'party', name:'Partypizza Margherita', al:'a,g', d:'50 × 50 cm', p:[20.00], one:true},
+    {n:'P', key:'party', name:'Partypizza Margherita', img:'party', al:'a,g', d:'50 × 50 cm', p:[20.00], one:true},
     {n:'+', key:'partyextra', name:'Extra Beilage (Partypizza)', d:'jeweils', p:[4.00], one:true},
   ]},
   {id:'pasta', title:'Pasta / Nudelgerichte', sub:'Mit Käse überbacken + 2,00 €', sizes:[''], pasta:true, items:[
-    {n:30, name:'Spaghetti Napoli', al:'a', p:[9.00], one:true},
-    {n:31, name:'Spaghetti alla Carbonara', al:'2,3,15,a,c,g', d:'Schinken, Zwiebeln und Parmesan in Butter geschwenkt, Ei', p:[11.00], one:true},
-    {n:32, name:'Spaghetti Marinara', al:'a,d', d:'Oliven, Kapern, Thunfisch, Knoblauch und Tomatensauce', p:[11.00], one:true},
-    {n:33, name:'Penne al Arrabiata', tag:'scharf', al:'a', d:'Chili, Knoblauch, Jalapeños und Tomatensauce', p:[11.00], one:true},
-    {n:34, name:'Insel Nudeln', al:'a,g', d:'Hähnchenbrust, Champignons, Brokkoli, Paprika und Knoblauch in Butter geschwenkt und Sahnesauce', p:[13.90], one:true},
+    {n:30, name:'Spaghetti Napoli', img:'napoli', al:'a', p:[9.00], one:true},
+    {n:31, name:'Spaghetti alla Carbonara', img:'carbonara', al:'2,3,15,a,c,g', d:'Schinken, Zwiebeln und Parmesan in Butter geschwenkt, Ei', p:[11.00], one:true},
+    {n:32, name:'Spaghetti Marinara', img:'marinara', al:'a,d', d:'Oliven, Kapern, Thunfisch, Knoblauch und Tomatensauce', p:[11.00], one:true},
+    {n:33, name:'Penne al Arrabiata', img:'arrabiata', tag:'scharf', al:'a', d:'Chili, Knoblauch, Jalapeños und Tomatensauce', p:[11.00], one:true},
+    {n:34, name:'Insel Nudeln', img:'inselnudeln', al:'a,g', d:'Hähnchenbrust, Champignons, Brokkoli, Paprika und Knoblauch in Butter geschwenkt und Sahnesauce', p:[13.90], one:true},
   ]},
   {id:'drinks', title:'Softdrinks', sub:'Inkl. Pfand', sizes:['0,33 l','1 l'], items:[
     {n:'', name:'Cola', al:'3,9', p:[2.00,3.50]},
@@ -455,7 +463,7 @@ MENU.forEach((c,i) => {
     const btns = it.p.map((pr,si) => pr==null ? '' :
       `<button class="add" data-add="${it.k}" data-size="${si}" aria-label="${it.name} ${it.one?'':sizes[si]} in den Warenkorb">${it.one||!sizes[si]?'':`<span class="sz">${sizes[si]}</span>`}${eur(pr)}<span class="plus">+</span></button>`).join('');
     const el = document.createElement('div'); el.className = 'item';
-    el.innerHTML = `<div class="top">${it.n!==''?`<span class="num">${it.n}</span>`:`<span class="num">🥤</span>`}<div><h4>${it.name}${it.al?`<sup class="al">${it.al}</sup>`:''}${it.tag?`<span class="tag">${it.tag}</span>`:''}</h4>${it.d?`<div class="desc">${it.d}</div>`:''}</div></div><div class="prices">${btns}</div>`;
+    el.innerHTML = `${it.img?`<img class="thumb" src="img/${it.img}.jpg" alt="${it.name}" loading="lazy" width="118" height="118">`:''}<div class="body"><div class="top">${it.n!==''?`<span class="num">${it.n}</span>`:`<span class="num">🥤</span>`}<div><h4>${it.name}${it.al?`<sup class="al">${it.al}</sup>`:''}${it.tag?`<span class="tag">${it.tag}</span>`:''}</h4>${it.d?`<div class="desc">${it.d}</div>`:''}</div></div><div class="prices">${btns}</div></div>`;
     grid.appendChild(el);
   });
   if (c.id==='spezial') sec.insertAdjacentHTML('beforeend','<p class="note">Calzone nur in 30 cm.</p>');
